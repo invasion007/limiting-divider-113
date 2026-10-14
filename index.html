@@ -1120,8 +1120,43 @@ txt(ctx, notes[0], b.x0 + 12, yN + 16, { size: 11.5, color: C.grey, align: 'left
 txt(ctx, notes[1], b.x0 + 12, yN + 34, { size: 11.5, color: C.grey, align: 'left' });
 }
 
-var lm = P.limitRange(st.R0, st.R), dv = P.dividerRange(st.R0, st.R);
 var stripH = clamp(L.rowH, 30, 44) * 2 + (tiny ? 4 : 26);
+var bandA = yN + 58, bandB = b.y1 - (stripH + 40);
+var gaugeH = 136;
+var ratioY = bandA + Math.max(0, (bandB - bandA - gaugeH) / 2);
+if (!tiny && (bandB - bandA) > 110) {
+var bx0 = b.x0 + 92, bx1 = b.x1 - 128, bw = bx1 - bx0;
+var mx = Math.max(st.R0, st.R) * 1.05;
+txt(ctx, '判据③ 现场标尺（R₀ / R）', b.x0, ratioY + 12, { size: 12, color: C.white, align: 'left', weight: 600 });
+txt(ctx, '蓝条 = R₀（变阻器最大阻值）　灰条 = R（负载）　两条一样长时 R₀/R = 1，正好够用',
+b.x0, ratioY + 30, { size: 11, color: C.grey, align: 'left' });
+var yR0 = ratioY + 92, yRr = ratioY + 124;
+
+txt(ctx, 'R', b.x0, yRr, { size: 13, color: C.white, align: 'left', weight: 700 });
+box(ctx, bx0, yRr - 8, bw * (st.R / mx), 16, { fill: C.white, alpha: 0.14, stroke: C.white, lw: 1.2 });
+txt(ctx, st.R + ' Ω', bx0 + bw * (st.R / mx) + 8, yRr, { size: 12, color: C.white, align: 'left', weight: 600 });
+
+txt(ctx, 'R₀', b.x0, yR0, { size: 13, color: C.blue, align: 'left', weight: 700 });
+box(ctx, bx0, yR0 - 8, bw * (st.R0 / mx), 16, { fill: C.blue, alpha: 0.26, stroke: C.blue, lw: 1.4 });
+txt(ctx, st.R0 + ' Ω', bx0 + bw * (st.R0 / mx) + 8, yR0, { size: 12, color: C.blue, align: 'left', weight: 600 });
+
+var xR = bx0 + bw * (st.R / mx), xQ = bx0 + bw * (st.R * 0.25 / mx);
+seg(ctx, xR, ratioY + 62, xR, yRr + 14, C.yellow, 1.4);
+txt(ctx, 'R（够用线）', xR, ratioY + 56, {
+size: 11, color: C.yellow, weight: 700, align: xR > bx1 - 70 ? 'right' : 'left'
+});
+seg(ctx, xQ, ratioY + 62, xQ, yRr + 14, C.grey, 1.2, [5, 5]);
+txt(ctx, 'R/4（低于它就该换分压）', xQ, ratioY + 56, { size: 11, color: C.grey, align: 'left' });
+var lv = P.diagnose(st.R0, st.R);
+txt(ctx, 'R₀ / R = ' + f2(lv.k), b.x1, yR0, { size: 13, color: C.white, align: 'right', weight: 700 });
+txt(ctx, lv.level === 'ok' ? '限流够用' : (lv.level === 'mid' ? '限流偏窄' : '该换分压'),
+b.x1, yRr, {
+size: 14, align: 'right', weight: 700,
+color: lv.level === 'ok' ? C.blue : (lv.level === 'mid' ? C.gold : C.red)
+});
+}
+
+var lm = P.limitRange(st.R0, st.R), dv = P.dividerRange(st.R0, st.R);
 var y3 = tiny ? (b.y1 - stripH) : Math.max(yN + 60, b.y1 - stripH);
 if (!tiny) {
 txt(ctx, '现场验证：把底栏的 R₀、R 调到这一题的情形，条带立刻给答案',
@@ -1173,12 +1208,25 @@ b.x0 + 12, my + 34, { size: 11, color: C.grey, align: 'left' });
 } else {
 txt(ctx, '点上面的卡片作答（或按 ← → 键）', b.x0, my + 18, { size: 12, color: C.grey, align: 'left' });
 }
-var stripH2 = clamp(L.rowH, 30, 44) * 2 + 26;
-var sy = Math.max(my + 52, b.y1 - stripH2 - 14);
+
+var stripH2 = clamp(L.rowH, 30, 44) * 2 + (L.tiny ? 4 : 26);
+var helperH = 92;
+var midY = my + 24;
+if (!L.tiny) {
+box(ctx, b.x0, midY, b.x1 - b.x0, helperH, { fill: C.white, alpha: 0.03, stroke: C.grey, lw: 1.2 });
+txt(ctx, '照着三句话过一遍（任一条命中就是分压）：', b.x0 + 12, midY + 20, { size: 12.5, color: C.white, align: 'left', weight: 700 });
+txt(ctx, '① 电压要从 0 起调吗？　② 要宽范围 / 多组数据吗？　③ 变阻器最大阻值 R₀ 远小于负载 R 吗？',
+b.x0 + 12, midY + 44, { size: 12, color: C.grey, align: 'left' });
+txt(ctx, '三条都不命中 → 优先限流（接法简单、更省电）。',
+b.x0 + 12, midY + 66, { size: 12, color: C.gold, align: 'left', weight: 600 });
+}
+var sy = my + (L.tiny ? 14 : (helperH + 22));
 if (b.y1 - sy > 40) {
 var lm2 = P.limitRange(q.R0, q.R), dv2 = P.dividerRange(q.R0, q.R);
+if (!L.tiny) {
 txt(ctx, '本题情形（E = 6 V，R₀ = ' + q.R0 + ' Ω，R = ' + q.R + ' Ω）的电压可达范围',
 b.x0, sy - 10, { size: 11.5, color: C.grey, align: 'left' });
+}
 stripRows(ctx, L, b.x0, b.x1, sy, clamp(L.rowH, 30, 44), [
 { lab: '限流可达', labColor: C.white, color: C.red, lo: lm2.Umin, hi: lm2.Umax, vmax: P.E, read: f2(lm2.Umin) + ' – ' + f2(lm2.Umax) + ' V', sub: '可达 ' + Math.round((lm2.Umax - lm2.Umin) / P.E * 100) + '%', noMark: true },
 { lab: '分压可达', labColor: C.white, color: C.red, lo: dv2.Umin, hi: dv2.Umax, vmax: P.E, read: f2(dv2.Umin) + ' – ' + f2(dv2.Umax) + ' V', sub: '可达 100%', noMark: true }
