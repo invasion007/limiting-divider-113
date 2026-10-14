@@ -979,7 +979,7 @@ b.x0, b.y1 - 2, { size: L.small ? 11 : 12.5, color: C.grey, align: 'left', base:
 function viewCurve(ctx, L, st) {
 var P = window.VizPhys;
 var b = L.box;
-var padL = 52, padR = 60, padT = 14, padB = 34;
+var padL = 52, padR = 60, padT = 32, padB = 34;
 var x0 = b.x0 + padL, x1 = b.x1 - padR, y0 = b.y0 + padT, y1 = b.y1 - padB;
 var E = P.E, imax = P.E / st.R;
 var X = function (s) { return x0 + (x1 - x0) * clamp(s, 0, 1); };
@@ -1005,8 +1005,8 @@ var yy = y0 + (y1 - y0) * i / 6;
 txt(ctx, f2(E * (6 - i) / 6), x0 - 8, yy, { size: 11, color: C.red, align: 'right' });
 txt(ctx, f3(imax * (6 - i) / 6), x1 + 8, yy, { size: 11, color: C.blue, align: 'left' });
 }
-txt(ctx, 'U / V', x0 - 8, y0 - 6, { size: 11.5, color: C.red, align: 'right', weight: 600 });
-txt(ctx, 'I / A', x1 + 8, y0 - 6, { size: 11.5, color: C.blue, align: 'left', weight: 600 });
+txt(ctx, 'U / V', x0 - 8, y0 - 14, { size: 11.5, color: C.red, align: 'right', weight: 600 });
+txt(ctx, 'I / A', x1 + 8, y0 - 14, { size: 11.5, color: C.blue, align: 'left', weight: 600 });
 
 var rg = P.ranges(st.mode, st.R0, st.R);
 if (st.mode === 'divider') {
@@ -1054,8 +1054,8 @@ txt(ctx, 'U=' + f2(o.U) + ' V', xc, YU(o.U) - 14, { size: 12, color: C.yellow, w
 txt(ctx, 'I=' + f3(o.I) + ' A', xc, YI(o.I) + 15, { size: 12, color: C.yellow, weight: 700 });
 
 txt(ctx, (st.curveBoth ? '实线 = ' + (st.mode === 'limit' ? '限流' : '分压') + '　虚线 = ' + (st.mode === 'limit' ? '分压' : '限流') : (st.mode === 'limit' ? '限流接法' : '分压接法')),
-x0, y0 - 6, { size: 11.5, color: C.white, align: 'left' });
-txt(ctx, '红 = 电压 U　蓝 = 电流 I', x1, y0 - 6, { size: 11.5, color: C.grey, align: 'right' });
+x0, y0 - 17, { size: 11.5, color: C.white, align: 'left' });
+txt(ctx, '红 = 电压 U　蓝 = 电流 I', x1, y0 - 17, { size: 11.5, color: C.grey, align: 'right' });
 }
 
 function viewGuide(ctx, L, st) {
