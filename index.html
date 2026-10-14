@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>限流接法与分压接法 · 电压电流范围 · 可交互课件</title>
+<style>
+  :root{
+    /* A · Manim 基调：纯黑底 + 白线为主 + Manim 官方色常量
+       蓝 = 电流   红 = 电压   黄 = 结论量（当前滑片位置 / 这一屏要记住的话）
+       一屏同屏彩色元素 ≤ 3 种；不使用渐变/霓虹/投影 */
+    --bg:#000000; --bg2:#0a0a0a; --panel:#0e0e0e; --line:#242424; --line2:#383838;
+    --ink:#FFFFFF; --ink2:#B0B0B0; --muted:#888888;
+    --blue:#58C4DD; --red:#FC6255; --yellow:#FFFF00; --gold:#F0AC5F;
+    --green:#83C167; --purple:#9A72AC;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{background:var(--bg); color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC","WenQuanYi Zen Hei",sans-serif; overflow:hidden;}
+  .app{display:grid; grid-template-rows:auto auto 1fr auto auto; height:100vh;}
+
+  header{display:flex; align-items:baseline; gap:12px; padding:9px 18px 7px; flex-wrap:wrap; row-gap:3px;
+    background:var(--bg2); border-bottom:1px solid var(--line);}
+  header h1{font-size:16px; margin:0; font-weight:600; letter-spacing:.5px; white-space:nowrap;}
+  .act{font-size:13px; color:var(--yellow); border:1px solid var(--line2); border-radius:10px; padding:1px 9px; white-space:nowrap;}
+  .tag{font-size:12.5px; border:1px solid var(--line2); border-radius:10px; padding:1px 9px; white-space:nowrap;}
+  .tag.blue{color:var(--blue);} .tag.red{color:var(--red);}
+  .steptitle{font-size:15px; color:var(--ink); font-weight:600;}
+  .stepsn{margin-left:auto; font-size:13px; color:var(--ink2); font-variant-numeric:tabular-nums;}
+
+  .topnav{display:flex; align-items:center; gap:5px; padding:5px 14px 6px;
+    background:var(--bg2); border-bottom:1px solid var(--line); overflow-x:auto; overflow-y:hidden;}
+  .topnav .grouplab{flex:0 0 auto; font-size:11px; letter-spacing:.6px; color:var(--muted); font-weight:600; white-space:nowrap;}
+  .topnav .sep{flex:0 0 auto; width:1px; height:15px; background:var(--line2); margin:0 5px;}
+  .topnav a{flex:0 0 auto; min-width:27px; height:22px; padding:0 7px; display:inline-flex; align-items:center; justify-content:center;
+    font-size:12px; font-variant-numeric:tabular-nums; color:var(--ink2); background:#141414;
+    border:1px solid var(--line2); border-radius:6px; cursor:pointer;}
+  .topnav a:hover{background:#1e1e1e; color:var(--ink);}
+  .topnav a.on{background:rgba(255,255,0,0.12); border-color:var(--yellow); color:var(--yellow); font-weight:700;}
+
+  .stage{display:grid; grid-template-columns:1fr 300px; min-height:0;}
+  .canvaswrap{position:relative; min-width:0; min-height:0; padding:6px 8px 0 8px;}
+  canvas{display:block; width:100%; height:100%; cursor:grab; touch-action:none;}
+  .hint{padding:6px 20px 0 20px; font-size:12.5px; color:var(--muted); min-height:32px;}
+  .hint b{color:var(--yellow); font-weight:600;}
+
+  aside{background:var(--panel); border-left:1px solid var(--line); padding:10px 12px 14px; overflow-y:auto; min-height:0;}
+  aside h3{font-size:12px; color:var(--muted); margin:13px 0 6px; font-weight:600; letter-spacing:.5px;}
+  aside h3:first-child{margin-top:2px;}
+  .rd{display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:3px 0;
+    font-size:12.5px; color:var(--ink2); border-bottom:1px dashed #242424;}
+  .rd span{white-space:nowrap;}
+  .rd b{font-size:14px; color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .rd b.blue{color:var(--blue);} .rd b.red{color:var(--red);}
+  .rd b.yellow{color:var(--yellow);} .rd b.gold{color:var(--gold);} .rd b.grey{color:var(--muted);}
+  .total{margin-top:8px; padding:8px 10px; border:1px solid var(--line2); border-radius:8px; background:#141414;}
+  .total .lab{font-size:12px; color:var(--muted); display:block; margin-bottom:2px;}
+  .total b{font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:.3px;}
+  .total b.ok{color:var(--green);} .total b.warn{color:var(--gold);} .total b.bad{color:var(--red);}
+  .formula{font-size:13.5px; color:var(--ink); background:#141414; border:1px solid var(--line2);
+    border-radius:8px; padding:8px 10px; line-height:1.6; word-break:break-word;}
+  .note{font-size:12.5px; color:var(--ink2); line-height:1.66;}
+  .note b{color:var(--yellow); font-weight:600;}
+  .grp{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .grp .lab{font-size:12.5px; color:var(--muted);}
+  button{font-family:inherit; font-size:12.5px; color:var(--ink2); background:#141414;
+    border:1px solid var(--line2); border-radius:6px; padding:5px 10px; cursor:pointer; white-space:nowrap;}
+  button:hover{background:#1e1e1e; color:var(--ink);}
+  button.on{background:rgba(255,255,0,0.12); border-color:var(--yellow); color:var(--yellow); font-weight:700;}
+  button.main{background:#1a1a1a; color:var(--ink);}
+  .hidden{display:none !important;}
+
+  footer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; row-gap:6px;
+    padding:8px 14px 9px; background:var(--bg2); border-top:1px solid var(--line);}
+  .bar{position:relative; flex:1 1 90px; min-width:70px; height:6px; background:#141414; border-radius:3px;}
+  .bar i{display:block; height:100%; width:0; background:var(--yellow); border-radius:3px;}
+  .slider{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted);}
+  .slider input[type=range]{width:118px; accent-color:#4a4a4a;}
+  .slider b{color:var(--ink); font-variant-numeric:tabular-nums; min-width:56px; text-align:right;}
+  .slider i{font-style:normal; font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; min-width:104px;}
+
+  @media (max-width: 980px){
+    .stage{grid-template-columns:1fr 260px;}
+    .slider input[type=range]{width:96px;}
+  }
+  @media (max-width: 760px){
+    .stage{grid-template-columns:1fr; grid-template-rows:1fr auto;}
+    aside{border-left:none; border-top:1px solid var(--line); max-height:29vh;}
+    .canvaswrap{padding:3px 4px 0 4px;}
+    .hint{padding:3px 10px 0 10px; min-height:20px; font-size:11.5px; line-height:1.36;}
+    header{padding:5px 10px 4px; gap:8px;}
+    header h1{font-size:14px;} .steptitle{font-size:12.5px; flex:1 1 100%; order:5;}
+    .topnav{padding:4px 8px 5px;}
+    footer{padding:6px 10px 7px; gap:6px;}
+    .slider input[type=range]{width:78px;}
+    .slider i{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>限流接法 &amp; 分压接法</h1>
+    <span class="act" id="actTag">第一幕</span>
+    <span class="tag blue" id="modeTag">限流接法</span>
+    <span class="steptitle" id="stepTitle">—</span>
+    <span class="stepsn" id="stepSn">1 / 18</span>
+  </header>
+
+  <nav class="topnav" id="toc" aria-label="步骤导航"></nav>
+
+  <div class="stage">
+    <div class="canvaswrap"><canvas id="cv"></canvas></div>
+    <aside>
+      <h3 id="rdHead1">① 这一刻的量</h3>
+      <div id="rdGroup1"></div>
+      <h3 id="rdHead2">② 可调范围</h3>
+      <div id="rdGroup2"></div>
+
+      <div class="total"><span class="lab" id="rdRange">R₀ 与 R</span><b id="rdVerdict" class="ok">—</b></div>
+
+      <h3>这一刻的公式</h3>
+      <div class="formula" id="rdFormula">—</div>
+      <h3>提示</h3>
+      <div class="note" id="rdNote"></div>
+      <div class="note" style="margin-top:6px;color:#888888">键盘 ← → 翻步；<b style="color:#F0AC5F">数字键 1 / 2</b> 直接切「限流 / 分压」。画布上可以直接拖动黄色的滑片。</div>
+    </aside>
+  </div>
+
+  <div class="hint" id="hint"></div>
+
+  <footer>
+    <button id="btnPrev">◀ 上一步</button>
+    <button id="btnNext" class="main">下一步 ▶</button>
+    <button id="btnReset">↺ 复位本步</button>
+    <div class="bar" id="prog"><i></i></div>
+
+    <div class="slider" id="wrap_s"><span>滑片位置</span>
+      <input type="range" id="rgS" min="0" max="1" step="0.01" value="0.5">
+      <b id="lbS">s = 0.50</b><i id="lbS2"></i></div>
+
+    <div class="slider" id="wrap_R0"><span>变阻器 R₀</span>
+      <input type="range" id="rgR0" min="2" max="200" step="1" value="100">
+      <b id="lbR0">100 Ω</b></div>
+
+    <div class="slider" id="wrap_R"><span>负载 R</span>
+      <input type="range" id="rgR" min="2" max="200" step="1" value="100">
+      <b id="lbR">100 Ω</b></div>
+
+    <div class="grp" id="wrap_mode"><span class="lab">接法</span>
+      <button data-mode="limit">限流</button>
+      <button data-mode="divider">分压</button>
+    </div>
+
+    <div class="grp" id="wrap_curve">
+      <button id="btnCurve">叠加另一条曲线</button>
+    </div>
+
+    <div class="grp" id="wrapRatio"><span class="lab">典型比值</span>
+      <button data-typ="0">R₀ = R/10</button>
+      <button data-typ="1">R₀ = R</button>
+      <button data-typ="2">R₀ = 10R</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+
+
+window.VizPhys = (function () {
+'use strict';
+
+var E = 6.0;
+var R0_MIN = 2, R0_MAX = 200, R0_DEF = 100;
+var R_MIN = 2, R_MAX = 200, R_DEF = 100;
+var S_MIN = 0, S_MAX = 1, S_DEF = 0.5;
+
+var TYP = [
+{ key: 'small', R0: 20, R: 200, lab: 'R0 = R/10', sub: '变阻器远小于负载' },
+{ key: 'equal', R0: 100, R: 100, lab: 'R0 = R', sub: '两者相当' },
+{ key: 'large', R0: 200, R: 20, lab: 'R0 = 10R', sub: '变阻器远大于负载' }
+];
+
+function clamp01(v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
+function parOf(a, b) { return (a > 0 && b > 0) ? (a * b) / (a + b) : 0; }
+function racc(s, R0) { return (1 - clamp01(s)) * R0; }
+
+function limitOf(s, R0, R) {
+s = clamp01(s);
+var Rx = (1 - s) * R0;
+var I = E / (R + Rx);
+return { s: s, Rx: Rx, I: I, U: I * R };
+}
+function limitRange(R0, R) {
+return { Umin: E * R / (R + R0), Umax: E, Imin: E / (R + R0), Imax: E / R };
+}
+
+function dividerOf(s, R0, R) {
+s = clamp01(s);
+var Rlow = (1 - s) * R0, Rup = s * R0;
+var par = parOf(Rlow, R);
+var den = Rup + par;
+var Im = den > 0 ? E / den : 0;
+var U = den > 0 ? E * par / den : 0;
+var I = R > 0 ? U / R : 0;
+var I2 = Im - I;
+return { s: s, Rup: Rup, Rlow: Rlow, par: par, Im: Im, I: I, I2: I2, U: U };
+}
+
+function dividerClosed(s, R0, R) {
+var r = (1 - clamp01(s)) * R0;
+var den = R * R0 + r * (R0 - r);
+return den > 0 ? E * r * R / den : 0;
+}
+function dividerRange(R0, R) {
+return { Umin: 0, Umax: E, Imin: 0, Imax: E / R };
+}
+
+function ranges(mode, R0, R) {
+return mode === 'divider' ? dividerRange(R0, R) : limitRange(R0, R);
+}
+function outOf(mode, s, R0, R) {
+return mode === 'divider' ? dividerOf(s, R0, R) : limitOf(s, R0, R);
+}
+
+function sweep(mode, R0, R, n) {
+n = n || 121;
+var pts = [], i, r, s, q, U, I;
+for (i = 0; i < n; i++) {
+r = R0 * i / (n - 1);
+s = 1 - r / R0;
+if (mode === 'divider') {
+q = r / R0;
+U = E * r * R / (R * R0 + r * (R0 - r));
+I = R > 0 ? U / R : 0;
+} else {
+I = E / (R + r);
+U = I * R;
+}
+pts.push({ r: r, s: s, U: U, I: I });
+}
+return pts;
+}
+
+function diagnose(R0, R) {
+var k = R0 / R;
+var Umin = E * R / (R + R0);
+var ratio = Umin / E;
+var level = k >= 1 ? 'ok' : (k >= 0.25 ? 'mid' : 'bad');
+return { k: k, Umin: Umin, ratio: ratio, level: level };
+}
+
+function recommend(req, R0, R) {
+var d = diagnose(R0, R);
+if (req.fromZero) {
+return { pick: 'divider', why: '电压要从 0 开始连续调节 —— 限流的起点永远大于 0' };
+}
+if (req.wideRange) {
+return { pick: 'divider', why: '要求调节范围宽 / 要多组数据 —— 限流能到的范围太窄' };
+}
+if (d.level === 'bad') {
+return { pick: 'divider', why: '变阻器最大阻值只有负载的 ' + d.k.toFixed(2) + ' 倍 —— 限流几乎调不动' };
+}
+return { pick: 'limit', why: '三条判据都不命中 —— 优先限流：接法简单、更省电' };
+}
+
+var QUIZ = [
+{
+q: '要描出小灯泡的伏安特性曲线，要求电压从 0 开始连续增大到额定值。',
+hint: 'E = 6 V，变阻器 0 ~ 50 Ω，小灯泡约 10 Ω',
+R0: 50, R: 10,
+ans: 'divider',
+why: '电压必须从 0 起调 —— 判据①命中，只能用分压。'
+},
+{
+q: '用伏安法测一段电阻丝的阻值，只要求电压取几个不同的值。',
+hint: 'E = 6 V，变阻器 0 ~ 5 Ω，电阻丝约 100 Ω',
+R0: 5, R: 100,
+ans: 'divider',
+why: 'R0 只有 R 的 0.05 倍，限流时最低电压仍高达 95% E —— 判据③命中，用分压。'
+},
+{
+q: '同样测电阻，要求电压取 3 V、4 V、5 V 三组数据。',
+hint: 'E = 6 V，变阻器 0 ~ 200 Ω，待测电阻约 100 Ω',
+R0: 200, R: 100,
+ans: 'limit',
+why: '不要求从 0 起调，范围也够（限流可到 E/3 ≈ 2 V ~ 6 V）—— 优先限流，更简单更省电。'
+}
+];
+
+function runSelfTest() {
+var fails = [], cases = 0;
+function ok(name, cond, extra) {
+cases++;
+if (!cond) { fails.push(name + (extra ? ('　[' + extra + ']') : '')); }
+}
+function near(a, b, tol) { return Math.abs(a - b) <= (tol == null ? 1e-9 : tol); }
+
+var L, D, i, s, prev, mono;
+
+L = limitOf(0, 100, 100);
+ok('限流 s=0（滑片在最左）：整段串入，R′=R0', near(L.Rx, 100), 'Rx=' + L.Rx);
+ok('限流 s=0 且 R0=R：U = E/2 = 3 V', near(L.U, 3), 'U=' + L.U);
+L = limitOf(1, 100, 100);
+ok('限流 s=1（滑片在最右）：U = E', near(L.U, E), 'U=' + L.U);
+ok('限流 s=1：接入阻值为 0', near(L.Rx, 0), 'Rx=' + L.Rx);
+ok('限流 I = U/R 自洽', near(limitOf(0.37, 80, 120).I, limitOf(0.37, 80, 120).U / 120));
+
+mono = true; prev = -1;
+for (i = 0; i <= 200; i++) { var u1 = limitOf(i / 200, 100, 100).U; if (u1 < prev - 1e-12) { mono = false; } prev = u1; }
+ok('限流 U 随 s 单调不减（滑片右移，电压升高）', mono);
+
+D = dividerOf(0, 100, 100);
+ok('分压 s=0（滑片在最左）：U = E（上段为 0）', near(D.U, E, 1e-12), 'U=' + D.U);
+ok('分压 s=0：干路电流 = E/R∥', near(D.Im, E / 50), 'Im=' + D.Im);
+ok('分压 s=0：负载电流 = E/R', near(D.I, E / 100), 'I=' + D.I);
+ok('分压 s=0：上段电流 I总 − I负载 与下段自洽', near(D.I2, D.Im - D.I), 'I2=' + D.I2);
+D = dividerOf(1, 100, 100);
+ok('分压 s=1（滑片在最右）：U 严格为 0', D.U === 0, 'U=' + D.U);
+ok('分压 s=1：负载被短路，I = 0，电流全走下段', D.I === 0 && near(D.I2, D.Im), 'I2=' + D.I2 + ' Im=' + D.Im);
+D = dividerOf(0.5, 100, 100);
+ok('分压 s=0.5 且 R0=R：U = 0.4E = 2.4 V', near(D.U, 2.4, 1e-12), 'U=' + D.U);
+
+var worst = 0, i2ok = true;
+for (i = 0; i <= 200; i++) {
+s = i / 200;
+var r0 = 20 + 180 * s, rr = 20 + 180 * (1 - s);
+var dd = dividerOf(s, r0, rr);
+worst = Math.max(worst, Math.abs(dd.U - dividerClosed(s, r0, rr)));
+if (dd.I2 < -1e-12) { i2ok = false; }
+}
+ok('分压 U 的分式解 = 闭式解 U = E·R′·R/(R·R0+R′(R0−R′))', worst < 1e-12, 'maxdiff=' + worst);
+ok('分压下段电流 I2 恒不为负', i2ok);
+
+mono = true; prev = Infinity;
+for (i = 0; i <= 200; i++) { var u2 = dividerOf(i / 200, 100, 100).U; if (u2 > prev + 1e-12) { mono = false; } prev = u2; }
+ok('分压 U 随 s 单调不增（滑片右移，电压降低）', mono);
+
+var ratioOk = true, cs = 0;
+for (i = 0; i <= 60; i++) {
+for (var j = 0; j <= 60; j++) {
+s = i / 60; var R0v = 2 + 198 * j / 60, Rv = 2 + 198 * i / 60;
+var r = (1 - s) * R0v;
+var num = dividerOf(s, R0v, Rv).U, den2 = limitOf(s, R0v, Rv).U;
+var expect = r * (Rv + r) / ((Rv + r) * (R0v - r) + Rv * r);
+if (den2 > 1e-12 && Math.abs(num / den2 - expect) > 1e-9) { ratioOk = false; cs++; }
+}
+}
+ok('同一滑片位置：U分/U限 = r(R+r)/[(R+r)(R₀−r)+Rr]', ratioOk, 'bad=' + cs);
+ok('r = R₀ 端（滑片最左）：分压输出高于限流', dividerOf(0, 100, 100).U > limitOf(0, 100, 100).U);
+ok('r → 0 端（滑片最右）：分压输出低于限流', dividerOf(0.9, 100, 100).U < limitOf(0.9, 100, 100).U);
+ok('限流的可达电压集合 ⊂ 分压的可达电压集合',
+limitRange(100, 100).Umin > dividerRange(100, 100).Umin &&
+limitRange(100, 100).Umax <= dividerRange(100, 100).Umax);
+
+var lr = limitRange(100, 100), dr = dividerRange(100, 100);
+ok('限流最低电压 > 0（调不到 0）', lr.Umin > 0, 'Umin=' + lr.Umin);
+ok('限流范围 = [E·R/(R+R0), E]', near(lr.Umin, 3) && near(lr.Umax, E));
+ok('分压范围 = [0, E]', dr.Umin === 0 && near(dr.Umax, E));
+ok('两者最高电压相同、起点不同', near(lr.Umax, dr.Umax) && (lr.Umin - dr.Umin > 1));
+ok('限流最低电压公式 U=E·R/(R+R0)', near(limitRange(50, 150).Umin, E * 150 / 200), 'U=' + limitRange(50, 150).Umin);
+ok('限流范围上下限就是 s=0 与 s=1 两端', near(limitOf(0, 100, 100).U, limitRange(100, 100).Umin) && near(limitOf(1, 100, 100).U, limitRange(100, 100).Umax));
+ok('分压范围上下限就是 s=1 与 s=0 两端', near(dividerOf(1, 100, 100).U, 0) && near(dividerOf(0, 100, 100).U, E));
+
+ok('分压最大电流 = E/R', near(dr.Imax, E / 100));
+ok('两者最大电流相同（都等于 E/R）', near(lr.Imax, dr.Imax));
+ok('限流最小电流 = E/(R+R0)', near(lr.Imin, E / 200));
+ok('分压最小电流 = 0', dr.Imin === 0);
+
+var sw = sweep('limit', 100, 100, 5);
+ok('扫描 5 点', sw.length === 5);
+ok('扫描首点 r=0 → 限流 U=E', near(sw[0].U, E) && near(sw[0].r, 0));
+ok('扫描末点 r=R0 → 限流 U=Umin', near(sw[4].U, limitRange(100, 100).Umin) && near(sw[4].r, 100));
+var swd = sweep('divider', 100, 100, 5);
+ok('扫描首点限流与分压同 r=0：U 分别为 E 与 0', near(sw[0].U, E) && near(swd[0].U, 0));
+ok('扫描末点 r=R0：限流 Umin、分压 E', near(sw[4].U, 3) && near(swd[4].U, E));
+var midOk = true;
+for (i = 0; i < sw.length; i++) {
+if (!near(swd[i].U, dividerClosed(swd[i].s, 100, 100), 1e-12)) { midOk = false; }
+}
+ok('分压曲线逐点 = 闭式解', midOk);
+
+var tiny = 1e-6;
+ok('R0→0 时限流恒为 E（完全调不动）', near(limitOf(0.3, tiny, 100).U, E, 1e-6), 'U=' + limitOf(0.3, tiny, 100).U);
+ok('R0→0 时分压 → 线性', near(dividerOf(0.7, 100 * tiny, 100).U, E * 0.3, 1e-3), 'U=' + dividerOf(0.7, 100 * tiny, 100).U);
+ok('R0≫R 时限流起点很低（范围宽）', limitRange(200, 2).Umin < 0.1, 'Umin=' + limitRange(200, 2).Umin);
+ok('R0≫R 时分压严重非线性（滑片居中处远低于 E/2）', dividerOf(0.5, 2000, 20).U < 0.1 * E, 'U=' + dividerOf(0.5, 2000, 20).U);
+
+var morePower = true;
+for (i = 1; i < 200; i++) {
+s = i / 200;
+if (dividerOf(s, 100, 100).Im < limitOf(s, 100, 100).I - 1e-12) { morePower = false; }
+}
+ok('分压干路电流不小于限流（分压更费电）', morePower);
+
+ok('诊断：R0 = R 判为可用', diagnose(100, 100).level === 'ok');
+ok('诊断：R0 = R/10 判为调不动', diagnose(10, 100).level === 'bad');
+ok('诊断：R0 = R/2 判为偏窄', diagnose(50, 100).level === 'mid');
+ok('判据①命中 → 分压', recommend({ fromZero: true, wideRange: false }, 100, 100).pick === 'divider');
+ok('判据②命中 → 分压', recommend({ fromZero: false, wideRange: true }, 100, 100).pick === 'divider');
+ok('判据③命中（R0 太小）→ 分压', recommend({ fromZero: false, wideRange: false }, 5, 100).pick === 'divider');
+ok('都不命中 → 限流', recommend({ fromZero: false, wideRange: false }, 100, 100).pick === 'limit');
+
+ok('练习题共 3 道', QUIZ.length === 3);
+ok('第 2 题场景 R0 ≪ R 且答案分压', QUIZ[1].ans === 'divider' && (QUIZ[1].R0 / QUIZ[1].R) < 0.25);
+ok('第 3 题场景限流够用', QUIZ[2].ans === 'limit' && diagnose(QUIZ[2].R0, QUIZ[2].R).level === 'ok');
+ok('第 1 题场景要求从 0 起调', recommend({ fromZero: true, wideRange: false }, QUIZ[0].R0, QUIZ[0].R).pick === 'divider');
+
+return { cases: cases, nfail: fails.length, fails: fails, pass: fails.length === 0 };
+}
+
+return {
+E: E,
+TYP: TYP, QUIZ: QUIZ,
+R0_MIN: R0_MIN, R0_MAX: R0_MAX, R0_DEF: R0_DEF,
+R_MIN: R_MIN, R_MAX: R_MAX, R_DEF: R_DEF,
+S_MIN: S_MIN, S_MAX: S_MAX, S_DEF: S_DEF,
+clamp01: clamp01, parOf: parOf, racc: racc,
+limitOf: limitOf, limitRange: limitRange,
+dividerOf: dividerOf, dividerClosed: dividerClosed, dividerRange: dividerRange,
+ranges: ranges, outOf: outOf, sweep: sweep,
+diagnose: diagnose, recommend: recommend,
+runSelfTest: runSelfTest
+};
+})();
+
+
+
+window.VizRender = (function () {
+'use strict';
+
+var FONT = '"Microsoft YaHei","PingFang SC","Noto Sans SC","WenQuanYi Zen Hei",sans-serif';
+var C = {
+bg: '#000000', white: '#FFFFFF', grey: '#888888',
+yellow: '#FFFF00', red: '#FC6255', blue: '#58C4DD',
+green: '#83C167', gold: '#F0AC5F'
+};
+
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+function near(a, b, t) { return Math.abs(a - b) <= (t == null ? 1e-9 : t); }
+function f2(v) { return (Math.round(v * 100) / 100).toFixed(2); }
+function f3(v) { return (Math.round(v * 1000) / 1000).toFixed(3); }
+
+function txt(ctx, s, x, y, o) {
+o = o || {};
+ctx.save();
+ctx.font = (o.weight || 400) + ' ' + (o.size || 12) + 'px ' + FONT;
+ctx.fillStyle = o.color || C.white;
+ctx.textAlign = o.align || 'center';
+ctx.textBaseline = o.base || 'middle';
+if (o.alpha != null) { ctx.globalAlpha = o.alpha; }
+ctx.fillText(s, x, y);
+ctx.restore();
+}
+
+function seg(ctx, x0, y0, x1, y1, color, w, dash, alpha) {
+ctx.save();
+ctx.strokeStyle = color; ctx.lineWidth = w || 1.4; ctx.lineCap = 'butt';
+if (dash) { ctx.setLineDash(dash); }
+if (alpha != null) { ctx.globalAlpha = alpha; }
+ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+ctx.restore();
+}
+
+function poly(ctx, pts, color, w, dash, alpha) {
+var i;
+ctx.save();
+ctx.strokeStyle = color; ctx.lineWidth = w || 1.4;
+ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+if (dash) { ctx.setLineDash(dash); }
+if (alpha != null) { ctx.globalAlpha = alpha; }
+ctx.beginPath();
+ctx.moveTo(pts[0][0], pts[0][1]);
+for (i = 1; i < pts.length; i++) { ctx.lineTo(pts[i][0], pts[i][1]); }
+ctx.stroke();
+ctx.restore();
+}
+
+function box(ctx, x, y, w, h, o) {
+o = o || {};
+ctx.save();
+if (o.fill) { ctx.fillStyle = o.fill; ctx.globalAlpha = o.alpha == null ? 1 : o.alpha; ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1; }
+if (o.stroke) {
+ctx.strokeStyle = o.stroke; ctx.lineWidth = o.lw || 1.4;
+if (o.dash) { ctx.setLineDash(o.dash); }
+ctx.strokeRect(x, y, w, h);
+}
+ctx.restore();
+}
+
+function dot(ctx, x, y, r, color, alpha) {
+ctx.save();
+ctx.fillStyle = color; if (alpha != null) { ctx.globalAlpha = alpha; }
+ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+ctx.restore();
+}
+
+function glow(ctx, x, y, r, color, blur) {
+ctx.save();
+ctx.shadowColor = color; ctx.shadowBlur = blur == null ? 10 : blur;
+ctx.fillStyle = color; ctx.globalAlpha = 0.45;
+ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+ctx.restore();
+}
+
+function head(ctx, x, y, ang, size, color, alpha) {
+ctx.save();
+ctx.translate(x, y); ctx.rotate(ang);
+ctx.fillStyle = color; if (alpha != null) { ctx.globalAlpha = alpha; }
+ctx.beginPath();
+ctx.moveTo(size, 0); ctx.lineTo(-size * 0.75, size * 0.62); ctx.lineTo(-size * 0.75, -size * 0.62);
+ctx.closePath(); ctx.fill();
+ctx.restore();
+}
+
+function meter(ctx, cx, cy, r, letter, color, lw) {
+ctx.save();
+ctx.strokeStyle = color; ctx.lineWidth = lw || 1.6;
+ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+ctx.restore();
+txt(ctx, letter, cx, cy + 1, { size: r * 1.15, color: color, weight: 700 });
+}
+
+function battery(ctx, cx, cy, color, sc) {
+sc = sc || 1;
+var w = 26 * sc, g = 7 * sc;
+seg(ctx, cx - w / 2, cy - g, cx + w / 2, cy - g, color, 1.4);
+seg(ctx, cx - w * 0.30, cy + g, cx + w * 0.30, cy + g, color, 1.4);
+txt(ctx, '+', cx + w / 2 + 9, cy - g, { size: 13, color: color, weight: 700 });
+txt(ctx, '\u2212', cx + w / 2 + 9, cy + g, { size: 13, color: color, weight: 700 });
+}
+
+function layout(W, H, st) {
+var m = clamp(W * 0.032, 12, 46);
+var mt = clamp(H * 0.052, 20, 42);
+var mb = clamp(H * 0.048, 22, 42);
+var box = { x0: m, x1: W - m, y0: mt, y1: H - mb };
+var rows = st.compare ? 2 : (st.view === 'range' ? 4 : 2);
+var rowH = clamp(H * 0.045, 30, 46);
+var stripH = (st.view === 'circuit' || st.view === 'range') ? rows * rowH + 28 : 0;
+var split = box.y1 - stripH;
+if (stripH && split < box.y0 + 140) { split = box.y0 + Math.max(120, (box.y1 - box.y0) * 0.52); }
+
+var avail = split - 4 - box.y0;
+var ch = Math.round(Math.min(avail, clamp((box.x1 - box.x0) * 0.40, 220, 620)));
+var cy0 = Math.round(box.y0 + (avail - ch) / 2);
+return {
+W: W, H: H, m: m, box: box, split: split, rowH: rowH, rows: rows,
+circ: { x0: box.x0, y0: cy0, x1: box.x1, y1: cy0 + ch },
+strip: { x0: box.x0, y0: split, x1: box.x1, y1: box.y1 },
+small: W < 800, tiny: (W < 560 || H < 430)
+};
+}
+
+function headline(ctx, L, st) {
+var x = L.box.x0, y = L.box.y0 - 6;
+txt(ctx, st.headline || '', x, y, { size: L.small ? 12 : 13, color: C.grey, align: 'left', weight: 600 });
+if (st.tag) {
+txt(ctx, st.tag, L.box.x1, y, { size: L.small ? 12 : 13, color: C.white, align: 'right', weight: 600 });
+}
+if (st.conclusion) {
+
+txt(ctx, st.conclusion, L.box.x1, L.H - 4, {
+size: L.small ? 11.5 : 13, color: C.yellow, align: 'right', weight: 700, base: 'bottom'
+});
+}
+}
+
+function resBox(ctx, x, y, w, h, o) {
+o = o || {};
+var col = o.color || C.white;
+box(ctx, x, y, w, h, { fill: o.fill, stroke: col, lw: o.lw || 2.2, dash: o.dash });
+if (o.label) {
+txt(ctx, o.label, x + w / 2, y + h / 2 - (o.sub ? 8 : 0), { size: o.lsize || 13, color: col, weight: 700 });
+}
+if (o.sub) {
+txt(ctx, o.sub, x + w / 2, y + h / 2 + 9, { size: 11.5, color: o.subColor || C.grey, weight: 600 });
+}
+if (o.tag) {
+txt(ctx, o.tag, x + w / 2, y - 11, { size: 12.5, color: o.tagColor || col, weight: 700 });
+}
+}
+
+function rheoGlyph(ctx, g, st, o) {
+o = o || {};
+var P = window.VizPhys;
+var xr0 = g.xr0, xr1 = g.xr1, yR = g.yR, rh = g.rh, xw = g.xw;
+var n = 14, i, xp, on, tk = rh * 0.62;
+
+box(ctx, xr0, yR - rh / 2, xr1 - xr0, rh, { fill: C.white, alpha: 0.05, stroke: C.white, lw: 1.4 });
+
+for (i = 0; i <= n; i++) {
+xp = xr0 + (xr1 - xr0) * i / n;
+on = o.deadSegment ? (xp >= xw - 0.5) : true;
+seg(ctx, xp, yR - tk / 2, xp, yR + tk / 2, on ? (o.coilColor || C.blue) : C.grey, 1.4, null, on ? 0.95 : 0.42);
+}
+
+var tri = clamp(rh * 0.5, 5, 9);
+ctx.save();
+ctx.strokeStyle = C.white; ctx.lineWidth = 1.4;
+ctx.beginPath();
+ctx.moveTo(xw - tri, yR - rh / 2 - tri * 1.4);
+ctx.lineTo(xw + tri, yR - rh / 2 - tri * 1.4);
+ctx.lineTo(xw, yR - rh / 2 + 1);
+ctx.closePath(); ctx.stroke();
+ctx.restore();
+seg(ctx, xw, yR - rh / 2 - tri * 1.4 - 16, xw, yR - rh / 2 - tri * 1.4, C.white, 1.4);
+if (o.handle) { glow(ctx, xw, yR - rh / 2, 3.4, C.yellow, 8); }
+dot(ctx, xw, yR - rh / 2, 2.6, o.handle ? C.yellow : C.white);
+
+if (o.termA !== false) { dot(ctx, xr0, yR + rh / 2, 2.6, o.termAColor || C.white); }
+if (o.termB !== false) { dot(ctx, xr1, yR + rh / 2, 2.6, o.termBColor || C.white); }
+return { xr0: xr0, xr1: xr1, xw: xw, yR: yR, rh: rh };
+}
+
+function circGeom(L, st) {
+var b = L.circ, CW = b.x1 - b.x0, CH = b.y1 - b.y0;
+var g = { x0: b.x0, x1: b.x1, CW: CW, CH: CH, small: L.small };
+g.yT = b.y0 + clamp(CH * 0.10, 14, 26);
+g.yBot = b.y1 - 8;
+g.rh = clamp(CH * 0.075, 11, 18);
+g.yR = g.yBot - g.rh / 2 - clamp(CH * 0.06, 10, 20);
+g.yW = g.yR - g.rh / 2 - clamp(CH * 0.13, 18, 34);
+g.xr0 = b.x0 + CW * (st.mode === 'divider' ? 0.20 : 0.22);
+g.xr1 = g.xr0 + CW * (st.mode === 'divider' ? 0.46 : 0.48);
+g.xw = g.xr0 + (g.xr1 - g.xr0) * st.s;
+g.xA = g.xr0 - clamp(CW * 0.035, 10, 20);
+g.batY = b.y0 + CH * 0.46;
+g.xAmm = b.x0 + CW * 0.30;
+return g;
+}
+
+function dirArrows(ctx, segs, color, alpha) {
+var i, s;
+for (i = 0; i < segs.length; i++) {
+s = segs[i];
+var dx = s[2] - s[0], dy = s[3] - s[1];
+var len = Math.sqrt(dx * dx + dy * dy);
+if (len < 22) { continue; }
+var ts = s[4] == null ? [0.5] : s[4];
+for (var k = 0; k < ts.length; k++) {
+var f = ts[k];
+head(ctx, s[0] + dx * f, s[1] + dy * f, Math.atan2(dy, dx), 5.2, color, alpha);
+}
+}
+}
+
+function stripRows(ctx, L, x0, x1, y0, rowH, rows, noAxis) {
+var i, r, y;
+
+ctx.save();
+var lw = 0, rw = 0;
+for (i = 0; i < rows.length; i++) {
+ctx.font = (L.small ? 11.5 : 12.5) + 'px ' + FONT; lw = Math.max(lw, ctx.measureText(rows[i].lab).width);
+ctx.font = (L.small ? 12 : 13) + 'px ' + FONT; rw = Math.max(rw, ctx.measureText(rows[i].read).width);
+ctx.font = '11px ' + FONT; rw = Math.max(rw, ctx.measureText(rows[i].sub || '').width);
+}
+ctx.restore();
+lw = Math.min(lw + 12, (x1 - x0) * 0.26);
+rw = Math.min(rw + 12, (x1 - x0) * 0.36);
+var xs = x0 + lw, xe = x1 - rw;
+if (xe - xs < 60) { xe = xs + 60; }
+for (i = 0; i < rows.length; i++) {
+r = rows[i];
+y = y0 + i * rowH;
+txt(ctx, r.lab, x0, y + rowH * 0.42, { size: L.small ? 11.5 : 12.5, color: r.labColor || C.white, align: 'left', weight: 600 });
+var yb = y + rowH * 0.50;
+
+box(ctx, xs, yb - 7, xe - xs, 14, { fill: C.white, alpha: 0.05, stroke: C.grey, lw: 1 });
+
+var xa = xs + (xe - xs) * clamp(r.lo / r.vmax, 0, 1);
+var xb = xs + (xe - xs) * clamp(r.hi / r.vmax, 0, 1);
+if (r.lo > 0) {
+box(ctx, xs, yb - 7, xa - xs, 14, { fill: C.grey, alpha: 0.08 });
+if (xa - xs > 46) {
+txt(ctx, '这段调不到', (xs + xa) / 2, yb, { size: 11, color: C.grey, alpha: 0.85 });
+}
+}
+if (xb - xa > 1) {
+box(ctx, xa, yb - 7, Math.max(1.5, xb - xa), 14, { fill: r.color, alpha: 0.22, stroke: r.color, lw: 1.4 });
+}
+
+seg(ctx, xa, yb - 10, xa, yb + 10, r.color, 1.6);
+seg(ctx, xb, yb - 10, xb, yb + 10, r.color, 1.6);
+
+if (r.val != null && !r.noMark) {
+var xv = xs + (xe - xs) * clamp(r.val / r.vmax, 0, 1);
+seg(ctx, xv, yb - 15, xv, yb + 15, C.yellow, 1.4);
+head(ctx, xv, yb - 18, -Math.PI / 2, 4.6, C.yellow);
+}
+
+txt(ctx, r.read, x1, y + rowH * 0.30, { size: L.small ? 12 : 13, color: r.color, align: 'right', weight: 700 });
+if (r.sub) { txt(ctx, r.sub, x1, y + rowH * 0.78, { size: 11, color: C.grey, align: 'right' }); }
+}
+
+if (noAxis) { return; }
+var ay = y0 + rows.length * rowH + 4;
+seg(ctx, xs, ay, xe, ay, C.grey, 1, null, 0.5);
+var ticks = 4, k;
+for (k = 0; k <= ticks; k++) {
+var xt = xs + (xe - xs) * k / ticks;
+seg(ctx, xt, ay, xt, ay + 4, C.grey, 1, null, 0.5);
+if (!L.tiny || k % 2 === 0) {
+txt(ctx, (rows[0].vmax * k / ticks).toFixed(k === 0 ? 0 : 1), xt, ay + 14, { size: 11, color: C.grey });
+}
+}
+txt(ctx, rows[0].axisLab || '', xe + 4, ay + 14, { size: 11, color: C.grey, align: 'left' });
+}
+
+function viewRheo(ctx, L, st) {
+var P = window.VizPhys;
+var b = L.box, CW = b.x1 - b.x0;
+var yR = b.y0 + (b.y1 - b.y0) * 0.46;
+var rh = clamp(CW * 0.028, 14, 24);
+var xr0 = b.x0 + CW * 0.10, xr1 = b.x1 - CW * 0.10;
+var xw = xr0 + (xr1 - xr0) * st.s;
+var yRod = yR - rh * 2.6;
+var g = { xr0: xr0, xr1: xr1, xw: xw, yR: yR, rh: rh, x0: b.x0, x1: b.x1 };
+
+seg(ctx, xr0 - 12, yRod, xr1 + 12, yRod, C.white, 2.2, null, 0.75);
+
+box(ctx, xr0, yR - rh / 2, xr1 - xr0, rh, { fill: C.white, alpha: 0.05, stroke: C.white, lw: 1.4 });
+var n = 26, i, xp, on;
+for (i = 0; i <= n; i++) {
+xp = xr0 + (xr1 - xr0) * i / n;
+on = st.mode === 'divider' ? true : (xp >= xw - 0.5);
+seg(ctx, xp, yR - rh * 0.30, xp, yR + rh * 0.30, on ? C.blue : C.grey, 1.4, null, on ? 0.95 : 0.42);
+}
+
+var tri = 8;
+ctx.save();
+ctx.strokeStyle = C.white; ctx.lineWidth = 1.6;
+ctx.beginPath();
+ctx.moveTo(xw - tri, yRod + 3); ctx.lineTo(xw + tri, yRod + 3); ctx.lineTo(xw, yR - rh / 2 + 1);
+ctx.closePath(); ctx.stroke();
+ctx.restore();
+seg(ctx, xw, yRod, xw, yR - rh / 2 - 1, C.white, 1.6);
+glow(ctx, xw, yR - rh / 2, 3.6, C.yellow, 8);
+dot(ctx, xw, yR - rh / 2, 2.8, C.yellow);
+
+var yA = yR + rh / 2, yC = yRod;
+var posts = [
+{ k: 'A', x: xr0, y: yA, lab: 'A 端', dx: -6, dy: 24, al: 'right' },
+{ k: 'B', x: xr1, y: yA, lab: 'B 端', dx: 6, dy: 24, al: 'left' },
+{ k: 'C', x: xr0, y: yC, lab: 'C 端', dx: -6, dy: -20, al: 'right' },
+{ k: 'D', x: xr1, y: yC, lab: 'D 端', dx: 6, dy: -20, al: 'left' }
+];
+var useMap = st.mode === 'divider' ? { A: 1, B: 1, D: 1 } : { B: 1, D: 1 };
+for (i = 0; i < posts.length; i++) {
+var p = posts[i], used = !!useMap[p.k];
+seg(ctx, p.x, p.y, p.x + (p.k === 'A' || p.k === 'C' ? -14 : 14), p.y, used ? C.blue : C.grey, 1.6,
+used ? null : [4, 4], used ? 1 : 0.7);
+dot(ctx, p.x, p.y, 3.2, used ? C.blue : C.grey, used ? 1 : 0.8);
+txt(ctx, p.lab + (used ? '' : '（本篇不接）'), p.x + p.dx, p.y + p.dy, {
+size: 12.5, color: used ? C.blue : C.grey, align: p.al, weight: used ? 700 : 400
+});
+}
+
+seg(ctx, xw, yRod, xw + (xw > (xr0 + xr1) / 2 ? 26 : -26), yRod, C.blue, 1.6);
+txt(ctx, st.mode === 'divider' ? '滑片 → 接负载' : '滑片 → 接负载',
+xw + (xw > (xr0 + xr1) / 2 ? 30 : -30), yRod, {
+size: 12.5, color: C.blue, align: xw > (xr0 + xr1) / 2 ? 'left' : 'right', weight: 700
+});
+txt(ctx, '滑片（可拖）', xw, yRod - 18, { size: 12, color: C.yellow, weight: 600 });
+
+var rx = P.racc(st.s, st.R0);
+var yInfo = b.y1 - 6;
+
+if (L.tiny) {
+txt(ctx, st.mode === 'divider'
+? ('R₁ = ' + f2(st.s * st.R0) + ' Ω（上段·干路）　R₂ = ' + f2(rx) + ' Ω（下段·与 R 并联）')
+: ('接入段 = 滑片→B：R′ = ' + f2(rx) + ' Ω　（A 端悬空，左边那段没有电流）'),
+b.x0, yInfo - 6, { size: 11, color: C.grey, align: 'left' });
+return;
+}
+txt(ctx, st.mode === 'divider'
+? ('上段（A→滑片）R₁ = ' + f2(st.s * st.R0) + ' Ω 串在干路　下段（滑片→B）R₂ = ' + f2(rx) + ' Ω 与负载并联')
+: ('接入段 = 滑片→B：R′ = (1 − s)·R₀ = ' + f2(rx) + ' Ω；A 端悬空，滑片左边那段没有电流'),
+b.x0, yInfo - 8, { size: L.small ? 11.5 : 12.5, color: C.grey, align: 'left' });
+txt(ctx, '四接线柱：A / B 是线圈两端，C / D 是金属杆两端（滑片与杆连通）',
+b.x0, yInfo + 10, { size: L.small ? 11 : 12, color: C.grey, align: 'left', alpha: 0.85 });
+}
+
+function viewCircuit(ctx, L, st) {
+var P = window.VizPhys, g = circGeom(L, st), mode = st.mode;
+var out = P.outOf(mode, st.s, st.R0, st.R);
+var rg = P.ranges(mode, st.R0, st.R);
+var b = L.circ, CW = g.CW;
+var i;
+
+var wc = C.white, ww = 1.6;
+if (mode === 'limit') {
+
+poly(ctx, [[g.x0, g.yT], [g.x1, g.yT]], wc, ww);
+
+poly(ctx, [[g.x0, g.yT], [g.x0, g.yBot]], wc, ww);
+poly(ctx, [[g.x0, g.yBot], [g.xr1, g.yBot], [g.xr1, g.yR + g.rh / 2]], wc, ww);
+
+poly(ctx, [[g.x1, g.yT], [g.x1, g.yW], [g.xw, g.yW], [g.xw, g.yR - g.rh / 2]], wc, ww);
+
+seg(ctx, g.xr0, g.yR + g.rh / 2, g.xr0 - 16, g.yR + g.rh / 2, C.grey, 1.6, [4, 4], 0.8);
+ctx.save();
+ctx.strokeStyle = C.grey; ctx.lineWidth = 1.4; ctx.globalAlpha = 0.9;
+ctx.beginPath(); ctx.arc(g.xr0 - 21, g.yR + g.rh / 2, 4.6, 0, Math.PI * 2); ctx.stroke();
+ctx.restore();
+txt(ctx, 'A 端悬空', g.xr0 - 21, g.yR + g.rh / 2 + 18, { size: 11.5, color: C.grey });
+} else {
+
+poly(ctx, [[g.x0, g.yT], [g.xr0 - clamp(CW * 0.035, 10, 20), g.yT],
+[g.xA, g.yT], [g.xA, g.yR + g.rh / 2], [g.xr0, g.yR + g.rh / 2]], wc, ww);
+poly(ctx, [[g.x0, g.yT], [g.x0, g.yBot]], wc, ww);
+
+var xLoadC = Math.min(b.x1 - 26, g.xr1 + clamp(CW * 0.14, 60, 130));
+var lw2 = clamp(CW * 0.085, 52, 92);
+g.xLL = xLoadC - lw2 / 2; g.xLR = xLoadC + lw2 / 2; g.xLoadC = xLoadC;
+g.yL = g.yR - g.rh / 2 - clamp(CW * 0.075, 52, 96);
+poly(ctx, [[g.x0, g.yBot], [g.xLR + 22, g.yBot], [g.xLR + 22, g.yL], [g.xLR, g.yL]], wc, ww);
+poly(ctx, [[g.xr1, g.yR + g.rh / 2], [g.xr1, g.yBot]], wc, ww);
+
+poly(ctx, [[g.xw, g.yR - g.rh / 2], [g.xw, g.yW], [g.xLL, g.yW], [g.xLL, g.yL]], wc, ww);
+}
+
+battery(ctx, g.x0, g.batY, C.white);
+txt(ctx, 'E = ' + f2(P.E) + ' V', g.x0 + 30, g.batY, { size: 12, color: C.grey, align: 'left' });
+
+var rA = clamp(g.CH * 0.06, 11, 15);
+var aAx = mode === 'limit' ? g.xAmm : g.x0 + CW * 0.16;
+var aAy = g.yT;
+if (st.showA !== false) {
+ctx.save(); ctx.fillStyle = C.bg;
+ctx.beginPath(); ctx.arc(aAx, aAy, rA + 1, 0, Math.PI * 2); ctx.fill();
+ctx.restore();
+meter(ctx, aAx, aAy, rA, 'A', C.blue);
+
+txt(ctx, 'I = ' + f3(out.I) + ' A', aAx, L.small ? (aAy + rA + 12) : (aAy - rA - 12),
+{ size: 12.5, color: C.blue, weight: 700 });
+}
+
+var lw3 = mode === 'limit' ? clamp(CW * 0.10, 54, 96) : clamp(CW * 0.085, 52, 92);
+var lh3 = clamp(g.CH * 0.13, 24, 36);
+var lx, ly;
+if (mode === 'limit') {
+lx = g.x0 + CW * 0.60 - lw3 / 2; ly = g.yT - lh3 / 2;
+ctx.save(); ctx.fillStyle = C.bg; ctx.fillRect(lx, ly, lw3, lh3); ctx.restore();
+resBox(ctx, lx, ly, lw3, lh3, { label: 'R', sub: st.R + ' Ω', color: C.white, fill: null, tag: '负载（待测电阻）', tagColor: C.grey, lsize: 13 });
+} else {
+lx = g.xLL; ly = g.yL - lh3 / 2;
+ctx.save(); ctx.fillStyle = C.bg; ctx.fillRect(lx - 1, ly - 1, lw3 + 2, lh3 + 2); ctx.restore();
+resBox(ctx, lx, ly, lw3, lh3, { label: 'R', sub: st.R + ' Ω', color: C.white, tag: '负载（待测电阻）', tagColor: C.grey, lsize: 13 });
+}
+
+if (st.showV !== false) {
+var rV = rA;
+var vx, vy, p1, p2;
+if (mode === 'limit') {
+vx = g.x0 + CW * 0.60; vy = g.yT + clamp(g.CH * 0.26, 46, 92);
+p1 = [lx - 12, g.yT]; p2 = [lx + lw3 + 12, g.yT];
+} else {
+vx = g.xLoadC; vy = ly - clamp(g.CH * 0.20, 38, 72);
+p1 = [g.xLL - 12, g.yL]; p2 = [g.xLR + 12, g.yL];
+}
+ctx.save(); ctx.fillStyle = C.bg;
+ctx.beginPath(); ctx.arc(vx, vy, rV + 1, 0, Math.PI * 2); ctx.fill();
+ctx.restore();
+meter(ctx, vx, vy, rV, 'V', C.red);
+poly(ctx, [[p1[0], p1[1]], [p1[0], vy], [vx - rV, vy]], C.red, 1.4, null, 0.9);
+poly(ctx, [[p2[0], p2[1]], [p2[0], vy], [vx + rV, vy]], C.red, 1.4, null, 0.9);
+dot(ctx, p1[0], p1[1], 2.4, C.red); dot(ctx, p2[0], p2[1], 2.4, C.red);
+txt(ctx, 'U = ' + f2(out.U) + ' V', vx, vy + rV + 13, { size: 13, color: C.red, weight: 700 });
+}
+
+rheoGlyph(ctx, g, st, {
+deadSegment: mode === 'limit', handle: !!(st.allow && st.allow.s),
+coilColor: C.blue, termA: mode === 'divider', termAColor: C.blue, termBColor: C.blue
+});
+if (mode === 'limit') {
+txt(ctx, '接入段（有电流）', (g.xw + g.xr1) / 2, g.yR + g.rh / 2 + 18, { size: 11.5, color: C.blue, weight: 600 });
+if (g.xw - g.xr0 > 56) {
+txt(ctx, '这段无电流', (g.xr0 + g.xw) / 2, g.yR + g.rh / 2 + 18, { size: 11.5, color: C.grey });
+}
+} else {
+txt(ctx, 'R₁ 上段（串在干路）', (g.xr0 + g.xw) / 2, g.yR + g.rh / 2 + 18, { size: 11.5, color: C.blue, weight: 600, alpha: (g.xw - g.xr0) > 60 ? 1 : 0 });
+txt(ctx, 'R₂ 下段（与 R 并联）', (g.xw + g.xr1) / 2, g.yR + g.rh / 2 + 18, { size: 11.5, color: C.blue, weight: 600, alpha: (g.xr1 - g.xw) > 60 ? 1 : 0 });
+}
+txt(ctx, 'R₀ = ' + st.R0 + ' Ω（滑动变阻器最大阻值）', g.xr0, g.yR - g.rh / 2 - 30, {
+size: 12, color: C.grey, align: 'left'
+});
+if (!L.small) {
+txt(ctx, '滑片', g.xw, g.yR - g.rh / 2 - 46, { size: 11.5, color: C.yellow, weight: 600, align: 'center' });
+} else {
+txt(ctx, '滑片', g.xw, g.yR + g.rh / 2 + 32, { size: 11.5, color: C.yellow, weight: 600, align: 'center' });
+}
+
+if (st.arrows) {
+var sd;
+if (mode === 'limit') {
+sd = [
+[g.x0 + CW * 0.12, g.yT, g.x0 + CW * 0.24, g.yT, [0.5]],
+[g.x0 + CW * 0.72, g.yT, g.x0 + CW * 0.90, g.yT, [0.6]],
+[g.x1, g.yT + 20, g.x1, g.yW - 12, [0.4]],
+[g.x1 - 20, g.yW, g.xw + 24, g.yW, [0.55]],
+[g.xw + 14, g.yR, g.xr1 - 14, g.yR, [0.5]],
+[g.xr1, g.yR + g.rh / 2 + 8, g.xr1, g.yBot - 8, [0.5]],
+[g.xr1 - 40, g.yBot, g.x0 + 30, g.yBot, [0.3]],
+[g.x0, g.yBot - 30, g.x0, g.yT + 30, [0.35]]
+];
+} else {
+sd = [
+[g.x0 + CW * 0.04, g.yT, g.xA - 8, g.yT, [0.45]],
+[g.xA, g.yT + 14, g.xA, g.yR - 10, [0.5]],
+[g.xr0 + 16, g.yR, g.xw - 16, g.yR, [0.5]],
+[g.xw, g.yR - g.rh / 2 - 16, g.xw, g.yW + 12, [0.4]],
+[g.xw + 20, g.yW, g.xLL - 16, g.yW, [0.5]],
+[g.xLL, g.yW - 14, g.xLL, g.yL + 14, [0.5]],
+[g.xLL + 16, g.yL - lh3 / 2 - 1, g.xLR - 16, g.yL - lh3 / 2 - 1, [0.5]],
+[g.xLR - 16, g.yL, g.xLL + 16, g.yL, [0.5]],
+[g.xw + 16, g.yR, g.xr1 - 16, g.yR, [0.5]],
+[g.xr1, g.yR + g.rh / 2 + 8, g.xr1, g.yBot - 8, [0.5]],
+[g.xr1 - 40, g.yBot, g.x0 + 30, g.yBot, [0.3]],
+[g.x0, g.yBot - 30, g.x0, g.yT + 30, [0.35]]
+];
+}
+dirArrows(ctx, sd, C.blue, 0.9);
+}
+
+var P2 = window.VizPhys;
+if (st.compare) {
+var lm = window.VizPhys.limitRange(st.R0, st.R), dv = window.VizPhys.dividerRange(st.R0, st.R);
+var ol = window.VizPhys.limitOf(st.s, st.R0, st.R), od = window.VizPhys.dividerOf(st.s, st.R0, st.R);
+stripRows(ctx, L, L.strip.x0, L.strip.x1, L.strip.y0 + 4, L.rowH, [
+{
+lab: '限流', labColor: C.white, color: C.red, lo: lm.Umin, hi: lm.Umax, vmax: window.VizPhys.E,
+read: f2(lm.Umin) + ' – ' + f2(lm.Umax) + ' V', sub: '可达 ' + Math.round((lm.Umax - lm.Umin) / window.VizPhys.E * 100) + '%　当前 ' + f2(ol.U) + ' V',
+val: ol.U, axisLab: 'V'
+},
+{
+lab: '分压', labColor: C.white, color: C.red, lo: dv.Umin, hi: dv.Umax, vmax: window.VizPhys.E,
+read: f2(dv.Umin) + ' – ' + f2(dv.Umax) + ' V', sub: '可达 ' + Math.round((dv.Umax - dv.Umin) / window.VizPhys.E * 100) + '%　当前 ' + f2(od.U) + ' V',
+val: od.U, axisLab: 'V'
+}
+]);
+} else {
+var I = out.I, limE = P2.E;
+
+stripRows(ctx, L, L.strip.x0, L.strip.x1, L.strip.y0 + 4, L.rowH, [
+{
+lab: '电压 U', labColor: C.red, color: C.red, lo: rg.Umin, hi: rg.Umax, vmax: limE,
+read: f2(rg.Umin) + ' – ' + f2(rg.Umax) + ' V', sub: '当前 ' + f2(out.U) + ' V　可达 ' +
+Math.round((rg.Umax - rg.Umin) / limE * 100) + '%', val: out.U, axisLab: 'V'
+},
+{
+lab: '电流 I', labColor: C.blue, color: C.blue, lo: rg.Imin, hi: rg.Imax, vmax: rg.Imax,
+read: f3(rg.Imin) + ' – ' + f3(rg.Imax) + ' A', sub: '当前 ' + f3(I) + ' A', val: I, axisLab: 'A'
+}
+]);
+}
+}
+
+function viewRange(ctx, L, st) {
+var P = window.VizPhys;
+var b = L.box, E = P.E;
+var lm = P.limitRange(st.R0, st.R), dv = P.dividerRange(st.R0, st.R);
+var ol = P.limitOf(st.s, st.R0, st.R), od = P.dividerOf(st.s, st.R0, st.R);
+var imax = Math.max(lm.Imax, dv.Imax);
+var rows = [
+{ lab: '限流 · 电压', labColor: C.white, color: C.red, lo: lm.Umin, hi: lm.Umax, vmax: E, read: f2(lm.Umin) + ' – ' + f2(lm.Umax) + ' V', sub: '可达 ' + Math.round((lm.Umax - lm.Umin) / E * 100) + '%　当前 ' + f2(ol.U) + ' V', val: ol.U, axisLab: '' },
+{ lab: '限流 · 电流', labColor: C.white, color: C.blue, lo: lm.Imin, hi: lm.Imax, vmax: imax, read: f3(lm.Imin) + ' – ' + f3(lm.Imax) + ' A', sub: '当前 ' + f3(ol.I) + ' A', val: ol.I },
+{ lab: '分压 · 电压', labColor: C.white, color: C.red, lo: dv.Umin, hi: dv.Umax, vmax: E, read: f2(dv.Umin) + ' – ' + f2(dv.Umax) + ' V', sub: '可达 ' + Math.round((dv.Umax - dv.Umin) / E * 100) + '%　当前 ' + f2(od.U) + ' V', val: od.U },
+{ lab: '分压 · 电流', labColor: C.white, color: C.blue, lo: dv.Imin, hi: dv.Imax, vmax: imax, read: f3(dv.Imin) + ' – ' + f3(dv.Imax) + ' A', sub: '当前 ' + f3(od.I) + ' A', val: od.I }
+];
+var rowH = (b.y1 - b.y0 - 30) / rows.length;
+stripRows(ctx, L, b.x0, b.x1, b.y0 + 6, rowH, rows);
+
+txt(ctx, '限流 U_min = E·R/(R+R₀) = ' + f2(lm.Umin) + ' V　·　分压 U_min = 0　·　两者 U_max = E = ' + f2(E) + ' V',
+b.x0, b.y1 - 2, { size: L.small ? 11 : 12.5, color: C.grey, align: 'left', base: 'bottom' });
+}
+
+function viewCurve(ctx, L, st) {
+var P = window.VizPhys;
+var b = L.box;
+var padL = 52, padR = 60, padT = 14, padB = 34;
+var x0 = b.x0 + padL, x1 = b.x1 - padR, y0 = b.y0 + padT, y1 = b.y1 - padB;
+var E = P.E, imax = P.E / st.R;
+var X = function (s) { return x0 + (x1 - x0) * clamp(s, 0, 1); };
+var YU = function (u) { return y1 - (y1 - y0) * clamp(u / E, 0, 1); };
+var YI = function (i) { return y1 - (y1 - y0) * clamp(i / imax, 0, 1); };
+var i, s, pts;
+
+for (i = 0; i <= 6; i++) {
+var yv = y0 + (y1 - y0) * i / 6;
+seg(ctx, x0, yv, x1, yv, C.grey, 1, null, 0.18);
+}
+for (i = 0; i <= 10; i++) {
+var xv = x0 + (x1 - x0) * i / 10;
+seg(ctx, xv, y0, xv, y1, C.grey, 1, null, 0.12);
+if (i % 2 === 0) { txt(ctx, (i / 10).toFixed(1), xv, y1 + 14, { size: 11, color: C.grey }); }
+}
+txt(ctx, '滑片位置 s（0 = 最左端 A，1 = 最右端 B）', (x0 + x1) / 2, y1 + 28, { size: 11.5, color: C.grey });
+
+seg(ctx, x0, y0, x0, y1, C.red, 1.4);
+seg(ctx, x1, y0, x1, y1, C.blue, 1.4);
+for (i = 0; i <= 6; i++) {
+var yy = y0 + (y1 - y0) * i / 6;
+txt(ctx, f2(E * (6 - i) / 6), x0 - 8, yy, { size: 11, color: C.red, align: 'right' });
+txt(ctx, f3(imax * (6 - i) / 6), x1 + 8, yy, { size: 11, color: C.blue, align: 'left' });
+}
+txt(ctx, 'U / V', x0 - 8, y0 - 6, { size: 11.5, color: C.red, align: 'right', weight: 600 });
+txt(ctx, 'I / A', x1 + 8, y0 - 6, { size: 11.5, color: C.blue, align: 'left', weight: 600 });
+
+var rg = P.ranges(st.mode, st.R0, st.R);
+if (st.mode === 'divider') {
+box(ctx, x0, YU(rg.Umin), x1 - x0, Math.max(1, YU(rg.Umax) - YU(rg.Umin)), { fill: C.red, alpha: 0.10 });
+} else {
+box(ctx, x0, YU(rg.Umin), x1 - x0, Math.max(1, YU(rg.Umax) - YU(rg.Umin)), { fill: C.red, alpha: 0.10 });
+box(ctx, x0, YU(rg.Umin), x1 - x0, Math.max(1, YU(0) - YU(rg.Umin)), { fill: null, stroke: C.grey, lw: 1, dash: [5, 5] });
+txt(ctx, '这块调不到', (x0 + x1) / 2, (YU(0) + YU(rg.Umin)) / 2, { size: 11.5, color: C.grey });
+}
+
+var modes = st.curveBoth ? ['limit', 'divider'] : [st.mode];
+for (i = 0; i < modes.length; i++) {
+var md = modes[i], dash = (modes.length > 1 && md !== st.mode) ? [7, 5] : null;
+var alpha = (modes.length > 1 && md !== st.mode) ? 0.55 : 1;
+
+ctx.save();
+ctx.strokeStyle = C.red; ctx.lineWidth = 2.4; ctx.globalAlpha = alpha;
+if (dash) { ctx.setLineDash(dash); }
+ctx.beginPath();
+for (s = 0; s <= 1.0001; s += 1 / 120) {
+var u = md === 'limit' ? P.limitOf(s, st.R0, st.R).U : P.dividerOf(s, st.R0, st.R).U;
+var xx = X(s), yyv = YU(u);
+if (s === 0) { ctx.moveTo(xx, yyv); } else { ctx.lineTo(xx, yyv); }
+}
+ctx.stroke(); ctx.restore();
+
+ctx.save();
+ctx.strokeStyle = C.blue; ctx.lineWidth = 2.4; ctx.globalAlpha = alpha;
+if (dash) { ctx.setLineDash(dash); }
+ctx.beginPath();
+for (s = 0; s <= 1.0001; s += 1 / 120) {
+var o2 = md === 'limit' ? P.limitOf(s, st.R0, st.R) : P.dividerOf(s, st.R0, st.R);
+var xx2 = X(s), yy2 = YI(o2.I);
+if (s === 0) { ctx.moveTo(xx2, yy2); } else { ctx.lineTo(xx2, yy2); }
+}
+ctx.stroke(); ctx.restore();
+}
+
+var o = P.outOf(st.mode, st.s, st.R0, st.R);
+var xc = X(st.s);
+seg(ctx, xc, y0, xc, y1, C.yellow, 1.4);
+glow(ctx, xc, YU(o.U), 4, C.yellow, 8); dot(ctx, xc, YU(o.U), 3.2, C.yellow);
+dot(ctx, xc, YI(o.I), 3.2, C.yellow);
+txt(ctx, 'U=' + f2(o.U) + ' V', xc, YU(o.U) - 14, { size: 12, color: C.yellow, weight: 700 });
+txt(ctx, 'I=' + f3(o.I) + ' A', xc, YI(o.I) + 15, { size: 12, color: C.yellow, weight: 700 });
+
+txt(ctx, (st.curveBoth ? '实线 = ' + (st.mode === 'limit' ? '限流' : '分压') + '　虚线 = ' + (st.mode === 'limit' ? '分压' : '限流') : (st.mode === 'limit' ? '限流接法' : '分压接法')),
+x0, y0 - 6, { size: 11.5, color: C.white, align: 'left' });
+txt(ctx, '红 = 电压 U　蓝 = 电流 I', x1, y0 - 6, { size: 11.5, color: C.grey, align: 'right' });
+}
+
+function viewGuide(ctx, L, st) {
+var P = window.VizPhys, b = L.box;
+var cards = [
+{ k: 'zero', t: '① 电压要从 0 起调？', d: '要求 U 从 0 开始连续增大', q: '限流下限 = E·R/(R+R₀) > 0，永远到不了 0' },
+{ k: 'wide', t: '② 要宽范围 / 多组数据？', d: '要取 5 组以上不同的电压', q: '限流宽度 = R₀/(R+R₀)，最多也就一半上下' },
+{ k: 'r0', t: '③ 变阻器最大阻值太小？', d: 'R₀ < R（远远小于负载）', q: 'U_min/E = R/(R+R₀)，R₀ ≪ R 时趋近 1' }
+];
+var i, c, on, x, y = b.y0 + 4;
+var tiny = L.tiny;
+var ch = tiny ? 56 : clamp((b.y1 - b.y0) * 0.20, 104, 150);
+var cw = tiny ? (b.x1 - b.x0) : (b.x1 - b.x0 - 2 * 12) / 3;
+for (i = 0; i < 3; i++) {
+c = cards[i];
+x = tiny ? b.x0 : b.x0 + i * (cw + 12);
+y = b.y0 + 4 + (tiny ? i * (ch + 8) : 0);
+on = st.guidePick === c.k;
+box(ctx, x, y, cw, ch, { fill: on ? C.yellow : C.white, alpha: on ? 0.10 : 0.04, stroke: on ? C.yellow : C.grey, lw: on ? 1.8 : 1.2 });
+if (tiny) {
+txt(ctx, c.t, x + 10, y + 18, { size: 12, color: on ? C.yellow : C.white, align: 'left', weight: 700 });
+txt(ctx, '命中 → 用分压：' + c.q, x + 10, y + 38, { size: 11, color: C.grey, align: 'left' });
+} else {
+txt(ctx, c.t, x + 12, y + 22, { size: 13, color: on ? C.yellow : C.white, align: 'left', weight: 700 });
+txt(ctx, c.d, x + 12, y + 44, { size: 11.5, color: C.grey, align: 'left' });
+seg(ctx, x + 12, y + 60, x + cw - 12, y + 60, C.grey, 1, null, 0.35);
+txt(ctx, c.q, x + 12, y + 76, { size: 11.5, color: C.white, align: 'left', alpha: 0.9 });
+txt(ctx, '命中 → 用分压', x + 12, y + ch - 14, { size: 11.5, color: C.red, align: 'left', weight: 600 });
+}
+}
+if (tiny) { y = b.y0 + 4 + 3 * (ch + 8) - 8; }
+
+var dg = P.diagnose(st.R0, st.R);
+var y2 = tiny ? (b.y0 + 4 + 3 * (ch + 8)) : (y + ch + 14);
+var hit3 = st.guidePick === 'r0';
+var finalPick = st.guidePick ? ((st.guidePick === 'r0') ? (dg.level === 'bad' ? 'divider' : 'limit') : 'divider') : null;
+box(ctx, b.x0, y2, b.x1 - b.x0, 46, { fill: C.white, alpha: 0.03, stroke: C.grey, lw: 1.2 });
+txt(ctx, '逐条问下来：', b.x0 + 12, y2 + 16, { size: 12.5, color: C.grey, align: 'left' });
+var line = '';
+if (st.guidePick === 'zero') { line = '①命中 —— 必须分压：限流的起点永远大于 0'; }
+else if (st.guidePick === 'wide') { line = '②命中 —— 用分压：限流能到的范围太窄'; }
+else if (hit3) {
+line = dg.level === 'bad'
+? ('③命中（R₀/R = ' + f2(dg.k) + '）—— 限流几乎调不动，用分压')
+: ('③没命中（R₀/R = ' + f2(dg.k) + '）—— 限流够用，优先限流');
+} else { line = '三条都不命中 —— 优先限流：接法简单、更省电'; }
+txt(ctx, line, b.x0 + 12, y2 + 33, { size: L.small ? 12 : 13.5, color: C.yellow, align: 'left', weight: 700 });
+if (finalPick) {
+txt(ctx, '→ ' + (finalPick === 'divider' ? '分压接法' : '限流接法'), b.x1 - 12, y2 + 23, {
+size: L.small ? 14 : 17, color: finalPick === 'divider' ? C.red : C.blue, align: 'right', weight: 700
+});
+}
+
+var yN = y2 + 56;
+if (!tiny) {
+var notes = [
+'别硬用限流：R₀ = R/4 → U_min = 0.8E，数据全挤在高端',
+'别乱用分压：R₀ 过大 → 电压挤在滑片一小段里，调节不均匀；R₀ 过小 → 变阻器白耗电多'
+];
+box(ctx, b.x0, yN, b.x1 - b.x0, 48, { fill: C.white, alpha: 0.03, stroke: C.grey, lw: 1.2 });
+txt(ctx, notes[0], b.x0 + 12, yN + 16, { size: 11.5, color: C.grey, align: 'left' });
+txt(ctx, notes[1], b.x0 + 12, yN + 34, { size: 11.5, color: C.grey, align: 'left' });
+}
+
+var lm = P.limitRange(st.R0, st.R), dv = P.dividerRange(st.R0, st.R);
+var stripH = clamp(L.rowH, 30, 44) * 2 + (tiny ? 4 : 26);
+var y3 = tiny ? (b.y1 - stripH) : Math.max(yN + 60, b.y1 - stripH);
+if (!tiny) {
+txt(ctx, '现场验证：把底栏的 R₀、R 调到这一题的情形，条带立刻给答案',
+b.x0, y3 - 12, { size: 11.5, color: C.grey, align: 'left' });
+}
+stripRows(ctx, L, b.x0, b.x1, y3, clamp(L.rowH, 30, 44), [
+{ lab: '限流可达', labColor: C.white, color: C.red, lo: lm.Umin, hi: lm.Umax, vmax: P.E, read: f2(lm.Umin) + ' – ' + f2(lm.Umax) + ' V', sub: '可达 ' + Math.round((lm.Umax - lm.Umin) / P.E * 100) + '%', noMark: true },
+{ lab: '分压可达', labColor: C.white, color: C.red, lo: dv.Umin, hi: dv.Umax, vmax: P.E, read: f2(dv.Umin) + ' – ' + f2(dv.Umax) + ' V', sub: '可达 100%', noMark: true }
+], tiny);
+}
+
+function viewQuiz(ctx, L, st) {
+var P = window.VizPhys, b = L.box;
+var q = P.QUIZ[clamp(st.quizIdx | 0, 0, P.QUIZ.length - 1)];
+var y = b.y0 + 8;
+box(ctx, b.x0, y, b.x1 - b.x0, 64, { fill: C.white, alpha: 0.04, stroke: C.grey, lw: 1.2 });
+txt(ctx, '第 ' + (st.quizIdx + 1) + ' / ' + P.QUIZ.length + ' 题', b.x0 + 12, y + 16, { size: 11.5, color: C.grey, align: 'left' });
+txt(ctx, q.q, b.x0 + 12, y + 38, { size: L.small ? 12 : 13.5, color: C.white, align: 'left', weight: 600 });
+txt(ctx, q.hint, b.x0 + 12, y + 56, { size: 11.5, color: C.grey, align: 'left' });
+
+var oy = y + 78, oh = clamp((b.y1 - b.y0) * 0.07, 46, 64), ow = (b.x1 - b.x0 - 12) / 2;
+var opts = [
+{ k: 'limit', t: '限流接法', c: C.blue, d: '变阻器串在干路' },
+{ k: 'divider', t: '分压接法', c: C.red, d: '变阻器全接电源，负载取自一段' }
+];
+for (var i = 0; i < 2; i++) {
+var o = opts[i], x = b.x0 + i * (ow + 12);
+var picked = st.quizAns === o.k;
+var isRight = (o.k === q.ans);
+var col = C.grey, lw = 1.2, fill = C.white, al = 0.04;
+if (st.quizAns) {
+if (isRight) { col = C.green; lw = 2; fill = C.green; al = 0.12; }
+else if (picked) { col = C.red; lw = 2; fill = C.red; al = 0.12; }
+} else if (picked) { col = C.yellow; lw = 2; }
+box(ctx, x, oy, ow, oh, { fill: fill, alpha: al, stroke: col, lw: lw });
+txt(ctx, o.t, x + 12, oy + oh * 0.36, { size: L.small ? 12 : 13.5, color: col === C.grey ? C.white : col, align: 'left', weight: 700 });
+txt(ctx, o.d, x + 12, oy + oh * 0.72, { size: 11, color: C.grey, align: 'left' });
+if (st.quizAns && isRight) { txt(ctx, '✓ 正确', x + ow - 12, oy + 23, { size: 12.5, color: C.green, align: 'right', weight: 700 }); }
+if (st.quizAns && picked && !isRight) { txt(ctx, '✗', x + ow - 12, oy + 23, { size: 14, color: C.red, align: 'right', weight: 700 }); }
+}
+
+var my = oy + oh + 12;
+if (st.quizAns) {
+box(ctx, b.x0, my, b.x1 - b.x0, 42, { fill: C.yellow, alpha: 0.07, stroke: C.yellow, lw: 1 });
+txt(ctx, q.why, b.x0 + 12, my + 20, { size: L.small ? 11.5 : 13, color: C.yellow, align: 'left', weight: 600 });
+var lm = P.limitRange(q.R0, q.R), cfg2 = P.diagnose(q.R0, q.R);
+txt(ctx, '（本题 R₀ = ' + q.R0 + ' Ω，R = ' + q.R + ' Ω，R₀/R = ' + f2(cfg2.k) + '）',
+b.x0 + 12, my + 34, { size: 11, color: C.grey, align: 'left' });
+} else {
+txt(ctx, '点上面的卡片作答（或按 ← → 键）', b.x0, my + 18, { size: 12, color: C.grey, align: 'left' });
+}
+var stripH2 = clamp(L.rowH, 30, 44) * 2 + 26;
+var sy = Math.max(my + 52, b.y1 - stripH2 - 14);
+if (b.y1 - sy > 40) {
+var lm2 = P.limitRange(q.R0, q.R), dv2 = P.dividerRange(q.R0, q.R);
+txt(ctx, '本题情形（E = 6 V，R₀ = ' + q.R0 + ' Ω，R = ' + q.R + ' Ω）的电压可达范围',
+b.x0, sy - 10, { size: 11.5, color: C.grey, align: 'left' });
+stripRows(ctx, L, b.x0, b.x1, sy, clamp(L.rowH, 30, 44), [
+{ lab: '限流可达', labColor: C.white, color: C.red, lo: lm2.Umin, hi: lm2.Umax, vmax: P.E, read: f2(lm2.Umin) + ' – ' + f2(lm2.Umax) + ' V', sub: '可达 ' + Math.round((lm2.Umax - lm2.Umin) / P.E * 100) + '%', noMark: true },
+{ lab: '分压可达', labColor: C.white, color: C.red, lo: dv2.Umin, hi: dv2.Umax, vmax: P.E, read: f2(dv2.Umin) + ' – ' + f2(dv2.Umax) + ' V', sub: '可达 100%', noMark: true }
+]);
+}
+
+for (var k = 0; k < P.QUIZ.length; k++) {
+var dx2 = b.x0 + 12 + k * 18, dy2 = b.y1 - 8;
+dot(ctx, dx2, dy2, k === st.quizIdx ? 4 : 3, k === st.quizIdx ? C.yellow : C.grey, k === st.quizIdx ? 1 : 0.7);
+}
+}
+
+function draw(ctx, W, H, st) {
+ctx.save();
+ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+ctx.restore();
+var L = layout(W, H, st);
+headline(ctx, L, st);
+if (st.view === 'rheo') { viewRheo(ctx, L, st); }
+else if (st.view === 'range') { viewRange(ctx, L, st); }
+else if (st.view === 'curve') { viewCurve(ctx, L, st); }
+else if (st.view === 'guide') { viewGuide(ctx, L, st); }
+else if (st.view === 'quiz') { viewQuiz(ctx, L, st); }
+else { viewCircuit(ctx, L, st); }
+}
+
+return {
+C: C, FONT: FONT, draw: draw, layout: layout,
+f2: f2, f3: f3,
+
+wiperAt: function (W, H, st) {
+if (st.view === 'rheo') {
+var L = layout(W, H, st), b = L.box, CW = b.x1 - b.x0;
+var yR = b.y0 + (b.y1 - b.y0) * 0.46, rh = clamp(CW * 0.028, 14, 24);
+return { yR: yR, yRod: yR - rh * 2.6, xr0: b.x0 + CW * 0.10, xr1: b.x1 - CW * 0.10, rh: rh, box: b };
+}
+var L2 = layout(W, H, st), g = circGeom(L2, st);
+return { yR: g.yR, yRod: g.yR - g.rh / 2 - 46, xr0: g.xr0, xr1: g.xr1, rh: g.rh, box: L2.circ };
+},
+
+hitTest: function (W, H, st, px, py) {
+var L = layout(W, H, st), b = L.box, i;
+if (st.view === 'guide') {
+var ch = clamp((b.y1 - b.y0) * 0.30, 62, 118), cw = (b.x1 - b.x0 - 24) / 3, y = b.y0 + 4;
+var keys = ['zero', 'wide', 'r0'];
+for (i = 0; i < 3; i++) {
+var x = b.x0 + i * (cw + 12);
+if (px >= x && px <= x + cw && py >= y && py <= y + ch) { return { type: 'card', k: keys[i] }; }
+}
+return null;
+}
+if (st.view === 'quiz') {
+var qy = b.y0 + 8, oy = qy + 78, oh = clamp((b.y1 - b.y0) * 0.07, 46, 64), ow = (b.x1 - b.x0 - 12) / 2;
+var ks = ['limit', 'divider'];
+for (i = 0; i < 2; i++) {
+var ox = b.x0 + i * (ow + 12);
+if (px >= ox && px <= ox + ow && py >= oy && py <= oy + oh) { return { type: 'quiz', k: ks[i] }; }
+}
+var P = window.VizPhys;
+for (i = 0; i < P.QUIZ.length; i++) {
+var dx = b.x0 + 12 + i * 18, dy = b.y1 - 8;
+if (Math.abs(px - dx) <= 10 && Math.abs(py - dy) <= 12) { return { type: 'quizIdx', k: i }; }
+}
+return null;
+}
+var wi = this.wiperAt(W, H, st);
+if (px >= wi.xr0 - 16 && px <= wi.xr1 + 16 && py >= wi.yRod - 26 && py <= wi.yR + wi.rh) {
+return { type: 'wiper', box: wi };
+}
+return null;
+}
+};
+})();
+
+
+
+window.VizSteps = (function () {
+'use strict';
+
+function base() {
+return {
+step: 0, act: '', title: '', hint: '', note: '', formula: '',
+allow: {}, rng: {},
+view: 'circuit',
+mode: 'limit',
+s: 0.5,
+R0: 100, R: 100,
+compare: false,
+curveBoth: false,
+guidePick: null,
+quizIdx: 0, quizAns: null,
+arrows: true, showA: true, showV: true,
+headline: '', tag: '', conclusion: ''
+};
+}
+
+var A0 = '第一幕 · 认识滑动变阻器';
+var A1 = '第二幕 · 限流接法';
+var A2 = '第三幕 · 分压接法';
+var A3 = '第四幕 · 范围对比';
+var A4 = '第五幕 · 曲线：从 0 起 vs 调得动';
+var A5 = '第六幕 · 什么情况用哪一种';
+var A6 = '第七幕 · 练习';
+
+var DON = '拖动滑片';
+var RNG_S = { s: [0, 1, 0.01] };
+var RNG_R0 = { R0: [2, 200, 1] };
+var RNG_R = { R: [2, 200, 1] };
+
+var STEPS = [
+
+{
+act: A0,
+title: '四个接线柱：接哪两个，就决定了「接入哪一段」',
+hint: '拖 <b>滑片</b>（画布上直接拖，或底栏「滑片位置」滑杆）；注意看哪一段有电流、哪一段没有',
+note: '滑动变阻器就是一根<b>电阻丝绕成的线圈</b>（两端是 A、B），上面压着一根<b>金属杆</b>（两端是 C、D），' +
+'杆上套着一个能滑动的<b>滑片</b>。<br>' +
+'滑片与金属杆<b>连通</b>，又压在下面的线圈上取电。所以：<br>' +
+'· 接 <b>A、B</b> 两端 → 整段线圈都串进去，滑片<b>白动</b>（阻值不变，一点点用）<br>' +
+'· 接 <b>A、滑片</b> 或 <b>B、滑片</b> → 只有一段线圈接入，<b>移动滑片就改阻值</b><br>' +
+'接哪两个柱，本质上就是选「用哪一段线圈」。',
+formula: '接入阻值 = 被电流穿过的那一段线圈的长度 ∝ 它的电阻',
+allow: { s: true, drag: true },
+rng: RNG_S,
+view: 'rheo', mode: 'limit', s: 0.35, R0: 100, R: 100,
+headline: '滑动变阻器的结构', tag: '线圈 A—B ／ 金属杆 C—D',
+conclusion: '接哪两个柱 → 决定用哪一段线圈',
+init: function (st) { st.s = 0.35; st.mode = 'limit'; st.R0 = 100; st.R = 100; st.arrows = false; }
+},
+{
+act: A0,
+title: '两种接线的区别：限流看「B—滑片」，分压看「整段 + 滑片」',
+hint: '拖 <b>滑片</b>，对比两种接线：蓝色实线是接进去的柱，灰色虚线是空着的柱；再点底栏 <b>「限流 / 分压」</b> 切换',
+note: '同一个变阻器，两种接法：<br>' +
+'· <b>限流接法</b>：电源 → 变阻器的 <b>B 端</b> → 线圈 → 滑片 → 负载。' +
+'电流只穿过「滑片到 B」这一段，所以接入阻值 = (1 − s)·R₀。<b>A 端悬空</b>，滑片左边那段<b>没有电流</b>。<br>' +
+'· <b>分压接法</b>：变阻器的 <b>A、B 两端</b>都接到电源上，整段线圈都通电；负载接在 ' +
+'<b>滑片</b>与 <b>B 端</b>之间，只跟「滑片到 B」那一段并联。<br>' +
+'关键差别：限流时<b>线圈里处处电流相同</b>；分压时线圈被滑片<b>分成上下两段</b>，两段电流不同。',
+formula: '限流：R′ = (1 − s)·R₀　｜　分压：R₁ = s·R₀（上段）、R₂ = (1 − s)·R₀（下段）',
+allow: { s: true, drag: true, mode: true },
+rng: RNG_S,
+view: 'rheo', mode: 'limit', s: 0.5, R0: 100, R: 100,
+headline: '两种接法的接线柱', tag: '点「限流 / 分压」切换',
+conclusion: '限流：两个柱　分压：三个柱',
+init: function (st) { st.s = 0.5; st.mode = 'limit'; st.arrows = false; }
+},
+
+{
+act: A1,
+title: '限流接法：变阻器串在干路里，靠「多串一点」把电流压下去',
+hint: '拖 <b>滑片</b>看电压表、电流表怎么变；点 <b>「限流 / 分压」</b> 可以切到另一种接法对比',
+note: '限流接法整条回路串成一圈：电源 → 变阻器的 B 端 → 滑片 → 负载 R → 电流表 → 回到电源。<br>' +
+'滑片往<b>左</b>移，串进来的线圈变长、电阻变大、电流变小，R 上的电压也就变小。' +
+'滑片往<b>右</b>移（一直推到 B 端），接入阻值变成 0，R 上分到<b>全部电动势 E</b>。<br>' +
+'注意黄色虚线三角下面的那一段 —— 那才是"接进去"的电阻。',
+formula: 'I = E / (R + R′)，U = I·R，R′ = (1 − s)·R₀',
+allow: { s: true, drag: true, mode: true },
+rng: RNG_S,
+view: 'circuit', mode: 'limit', s: 0.5, R0: 100, R: 100,
+headline: '限流接法 · 电路', tag: '变阻器串在干路',
+conclusion: 'U 最高能到 E，但起点不是 0',
+init: function (st) { st.view = 'circuit'; st.mode = 'limit'; st.s = 0.5; st.R0 = 100; st.R = 100; st.compare = false; st.arrows = true; }
+},
+{
+act: A1,
+title: '限流接法的可调范围：U 从 3 V 到 6 V',
+hint: '拖 <b>滑片</b>把电压调到两端值，看右栏「可调范围」怎么给；再拖底栏 <b>「负载阻值 R」</b> 看范围怎么变',
+note: '右栏把两个极限写出来了：<br>' +
+'· 滑片在 <b>B 端</b>（接入 0）→ U = E = 6 V，I = E/R 最大；<br>' +
+'· 滑片在 <b>A 端</b>（整段串入 R₀）→ I = E/(R+R₀)，U = E·R/(R+R₀)。<br>' +
+'所以限流的电压范围是 <b>[E·R/(R+R₀), E]</b>，电流范围是 <b>[E/(R+R₀), E/R]</b>。<br>' +
+'<b>最要紧的一句</b>：只要 R₀ 是有限值，最低电压就<b>永远大于 0</b> —— 限流<b>调不到零</b>。',
+formula: 'U ∈ [ E·R/(R+R₀) , E ]　　I ∈ [ E/(R+R₀) , E/R ]',
+allow: { s: true, drag: true, R: true, mode: true },
+rng: Object.assign({}, RNG_S, RNG_R),
+view: 'circuit', mode: 'limit', s: 0.5, R0: 100, R: 100,
+headline: '限流接法 · 可调范围', tag: 'U 的下限 > 0',
+conclusion: '下限 U_min = E·R/(R+R₀) > 0',
+init: function (st) { st.view = 'circuit'; st.mode = 'limit'; st.s = 0.5; st.R = 100; st.R0 = 100; st.compare = false; }
+},
+{
+act: A1,
+title: '限流调得动吗？全看 R₀ 和 R 的比值',
+hint: '拖底栏 <b>「变阻器最大阻值 R₀」</b> 滑杆：看条带里那条「调不到」的灰区怎么变',
+note: '限流的"可调宽度"由 <b>R₀/R</b> 决定：<br>' +
+'· R₀ ≫ R（比如 200 Ω 对 20 Ω）→ 下限压得很低，<b>几乎能从 0 调到 E</b>，很灵活；<br>' +
+'· R₀ = R → 最低只能到 E/2；<br>' +
+'· R₀ ≪ R（比如 5 Ω 对 100 Ω）→ 最低电压还高达 <b>0.95 E</b>，滑片转一圈电压几乎不动 = <b>调不动</b>。<br>' +
+'所以"限流接法能不能用"这件事，是一眼可以从 <b>R₀ 与 R 的数量级</b> 判断出来的。',
+formula: 'U_min / E = R / (R + R₀)　→　R₀ ≪ R 时趋近 1（调不动）',
+allow: { s: true, drag: true, R0: true, R: true },
+rng: Object.assign({}, RNG_S, RNG_R0, RNG_R),
+view: 'circuit', mode: 'limit', s: 0.5, R0: 100, R: 100,
+headline: '限流 · 可调宽度取决于 R₀/R', tag: 'R₀ ≪ R 就调不动',
+conclusion: 'R₀ 越小，下端越够不着',
+init: function (st) { st.view = 'circuit'; st.mode = 'limit'; st.s = 0.5; st.R0 = 100; st.R = 100; }
+},
+
+{
+act: A2,
+title: '分压接法：变阻器整段都通电，负载只取「滑片到 B」那一段',
+hint: '拖 <b>滑片</b>看表针；点 <b>「限流 / 分压」</b> 切回限流，比较两种接线柱的不同',
+note: '分压接法要接<b>三个柱</b>：线圈的 <b>A、B</b> 接到电源两端，负载接在 <b>滑片</b> 与 <b>B</b> 之间。<br>' +
+'于是线圈被滑片切成上下两段：<b>上段 R₁ = s·R₀</b> 串在干路上，<b>下段 R₂ = (1 − s)·R₀</b> 与负载 R 并联。<br>' +
+'滑片移到 <b>最右端 B</b>：上段 = 整段 R₀，负载被下段<b>短路</b>，U = 0。' +
+'滑片移到 <b>最左端 A</b>：上段 = 0，负载直接接在电源上，U = E。',
+formula: 'R₁ = s·R₀（上段）　R₂ = (1 − s)·R₀（下段，与 R 并联）',
+allow: { s: true, drag: true, mode: true },
+rng: RNG_S,
+view: 'circuit', mode: 'divider', s: 0.5, R0: 100, R: 100,
+headline: '分压接法 · 电路', tag: '变阻器全接电源，负载取一段',
+conclusion: '滑到最右端，U 就是 0',
+init: function (st) { st.view = 'circuit'; st.mode = 'divider'; st.s = 0.5; st.R0 = 100; st.R = 100; st.compare = false; }
+},
+{
+act: A2,
+title: '分压接法的可调范围：U 从 0 V 连续升到 6 V',
+hint: '拖 <b>滑片</b>到两端，看电压从 0 一路连续变到 6 V；注意它随滑片是<b>反向</b>的（滑片左移升压）',
+note: '右栏给出分压的范围：<b>U ∈ [0, E]</b>，<b>I ∈ [0, E/R]</b> —— 两头都够得着，' +
+'从 0 起<b>连续可调</b>。<br>' +
+'注意方向与限流相反：分压时滑片<b>左移</b>电压<b>升高</b>（上段变短，分掉的少了）。' +
+'所以一开始接好线，先按"能不能调到 0"来验证接法对不对。<br>' +
+'代价也是有的：不管滑片在哪，<b>干路上（上段）始终有电流</b>，所以又要给负载供电、又要在上段白烧一部分。',
+formula: 'U ∈ [ 0 , E ]　　I ∈ [ 0 , E/R ]',
+allow: { s: true, drag: true, R: true, mode: true },
+rng: Object.assign({}, RNG_S, RNG_R),
+view: 'circuit', mode: 'divider', s: 0.5, R0: 100, R: 100,
+headline: '分压接法 · 可调范围', tag: 'U 从 0 起，连续可调',
+conclusion: 'U_min = 0，可以从零开始',
+init: function (st) { st.view = 'circuit'; st.mode = 'divider'; st.s = 0.5; st.R = 100; st.R0 = 100; st.compare = false; }
+},
+{
+act: A2,
+title: '分压不只看两端：中间段匀不匀，由 R₀/R 决定',
+hint: '拖 <b>「变阻器最大阻值 R₀」</b> 与 <b>「负载阻值 R」</b>，看滑片在中间时电压偏不偏',
+note: '分压能调到 0 和 E，但中间那一段是否均匀，全看 R₀ 与 R 的比值：<br>' +
+'· <b>R₀ ≪ R</b>：并联分掉的电流很小，U ≈ E·(1 − s) —— <b>几乎线性，全程都均匀好调</b>（这才是好分压器）；<br>' +
+'· <b>R₀ ≫ R</b>：负载很"重"，滑片刚离开 A 端电压就<b>猛掉</b>，之后滑多远都几乎不动 —— <b>只有一小段灵敏</b>；<br>' +
+'· 所以挑分压用的变阻器是<b>阻值小一点更好</b>（一般 R₀ ≲ R）；当然太小则变阻器上白白多耗电。',
+formula: 'U = E·R₂·R / [ R·R₀ + R₂·(R₀ − R₂) ]，R₂ = (1 − s)·R₀',
+allow: { s: true, drag: true, R0: true, R: true },
+rng: Object.assign({}, RNG_S, RNG_R0, RNG_R),
+view: 'circuit', mode: 'divider', s: 0.5, R0: 100, R: 100,
+headline: '分压 · 中间段是否均匀取决于 R₀/R', tag: '不是越大越好',
+conclusion: '分压选阻值小的变阻器：R₀ ≲ R 才匀',
+init: function (st) { st.view = 'circuit'; st.mode = 'divider'; st.s = 0.5; st.R0 = 100; st.R = 100; }
+},
+
+{
+act: A3,
+title: '把两条电路的电压范围摆在一起（这一屏是重点）',
+hint: '拖 <b>滑片</b>看两条黄标一起走；拖 <b>「变阻器最大阻值 R₀」</b> 与 <b>「负载阻值 R」</b> 看两条条带的宽度怎么变',
+note: '上面一条是<b>限流</b>能把 U 调到哪儿，下面一条是<b>分压</b>。横轴都是 0 ~ E。<br>' +
+'· 限流：从 <b>E·R/(R+R₀)</b> 起 —— 左边那段灰区写着「调不到」，滑片转到底也到不了；<br>' +
+'· 分压：<b>0 ~ E 全都能到</b>，条带铺满整条轴。<br>' +
+'看条带的<b>长度之比</b>就知道范围谁宽：限流只有 <b>R₀/(R+R₀)</b>，分压是 100%。这就是"分压贵在范围、限流省在简单"的可视化证据。',
+formula: '限流宽度 = E − E·R/(R+R₀) = E·R₀/(R+R₀)　｜　分压宽度 = E',
+allow: { s: true, R0: true, R: true, mode: true },
+rng: Object.assign({}, RNG_S, RNG_R0, RNG_R),
+view: 'circuit', mode: 'limit', s: 0.5, R0: 100, R: 100, compare: true,
+headline: '两条范围条带：电压 U', tag: '横轴 = 0 ~ E = 6 V',
+conclusion: '限流少掉的那一段 = 变阻器吃掉的',
+init: function (st) { st.view = 'circuit'; st.mode = 'limit'; st.s = 0.5; st.R0 = 100; st.R = 100; st.compare = true; }
+},
+{
+act: A3,
+title: '电流范围也摆一起：上限一样，下限不一样',
+hint: '拖 <b>滑片</b>、调 <b>R₀</b> 与 <b>R</b>；点 <b>「限流 / 分压」</b> 切换主视图对比',
+note: '两种接法的<b>最大电流相同</b>，都是滑片转到"变阻器不起作用"时的 <b>E/R</b>。<br>' +
+'不同的是下限：限流最小是 <b>E/(R+R₀)</b>（永远大于 0），分压最小是 <b>0</b>。<br>' +
+'还有一条代价：<b>分压时干路电流始终不小于限流</b> —— 因为分压的上段不管滑片在哪都在白白发热。' +
+'同样一组 R₀、R，分压总能耗更大，这是用范围换来的。',
+formula: 'I_max = E/R（两者相同）　｜　I_min：限流 E/(R+R₀)　分压 0',
+allow: { s: true, drag: true, R0: true, R: true, mode: true },
+rng: Object.assign({}, RNG_S, RNG_R0, RNG_R),
+view: 'circuit', mode: 'limit', s: 0.5, R0: 100, R: 100, compare: false,
+headline: '电流 I 的可调范围', tag: '上限同为 E/R，下限不同',
+conclusion: '分压更费电：上段一直在发热',
+init: function (st) { st.view = 'circuit'; st.mode = 'limit'; st.s = 0.5; st.R0 = 100; st.R = 100; st.compare = false; }
+},
+
+{
+act: A4,
+title: 'U–s 曲线：限流平缓往上，分压从 0 起而且是弯的',
+hint: '拖 <b>滑片</b>让黄标沿曲线走；点 <b>「限流 / 分压」</b> 切换，看另一条虚线怎么走',
+note: '横轴是滑片位置 s（0 = 最左端 A，1 = 最右端 B），左边红轴是电压 U。<br>' +
+'· <b>限流</b>（点"限流"时的实线）：从 <b>E·R/(R+R₀)</b> 起，平缓地升到 E —— 形状是简单的一支；<br>' +
+'· <b>分压</b>：从 E 平滑地落到 <b>0</b>，而且<b>不是直线</b> —— 因为并联让下段等效阻值非线性地变化。<br>' +
+'把两条曲线放在一起看：分压永远是<b>可调范围更大</b>的那条（在电压上压得更低）。',
+formula: '限流 U = E·R/(R + (1−s)R₀)　｜　分压 U = E·R₂·R / [ R·R₀ + R₂(R₀−R₂) ]',
+allow: { s: true, drag: true, mode: true, curve: true },
+rng: RNG_S,
+view: 'curve', mode: 'limit', s: 0.5, R0: 100, R: 100, curveBoth: true,
+headline: 'U 随滑片位置的变化', tag: '横轴 s：0 最左 → 1 最右',
+conclusion: '只有分压能摸到 0',
+init: function (st) { st.view = 'curve'; st.mode = 'limit'; st.s = 0.5; st.R0 = 100; st.R = 100; st.curveBoth = true; }
+},
+{
+act: A4,
+title: 'I–s 曲线：两条曲线共用同一个上限 E/R',
+hint: '拖 <b>滑片</b>；拖 <b>「负载阻值 R」</b> 看两条曲线一起上下移动；点 <b>「限流 / 分压」</b> 切换',
+note: '红色是电压、蓝色是电流（右轴）。两条曲线的共同点：<b>最高点都是 E/R</b>（滑片到"变阻器不起作用"的那一端）。<br>' +
+'不同点全在低处：<b>分压的电流能从 0 起</b>，限流的电流永远停在 E/(R+R₀) 以上。<br>' +
+'所以电路题里问"电流能不能调到 0" —— 答案是：只有分压能。',
+formula: 'I 上限 = E/R　｜　I 下限：限流 E/(R+R₀)、分压 0',
+allow: { s: true, drag: true, R: true, mode: true, curve: true },
+rng: Object.assign({}, RNG_S, RNG_R),
+view: 'curve', mode: 'limit', s: 0.5, R0: 100, R: 100, curveBoth: true,
+headline: 'I 随滑片位置的变化', tag: '右轴 = 电流 A',
+conclusion: '下限：限流比 0 高，分压就是 0',
+init: function (st) { st.view = 'curve'; st.mode = 'limit'; st.s = 0.5; st.R0 = 100; st.R = 100; st.curveBoth = true; }
+},
+
+{
+act: A5,
+title: '三条判据：点一点，看它把你推向哪种接法（这一屏是重点）',
+hint: '点画布上的<b>三张卡片</b>逐条问自己：命中哪一条就选分压；再调底栏 <b>「变阻器最大阻值 R₀」</b> 与 <b>「负载阻值 R」</b> 看下方的现场验证条带怎么变',
+note: '选接法不用背，逐条问三句话：<br>' +
+'① <b>电压要从 0 起调吗？</b>（描伏安特性曲线、要 U–I 从原点开始）→ 命中就<b>必须分压</b>，限流起点永远大于 0；<br>' +
+'② <b>要宽范围 / 多组数据吗？</b>（要取 5 组以上、要把电压拉得很低）→ 命中用<b>分压</b>；<br>' +
+'③ <b>变阻器最大阻值是不是太小？</b>（R₀ ≪ R）→ 命中用<b>分压</b>，因为限流会调不动。<br>' +
+'三条都不命中 → <b>优先限流</b>：只用两个接线柱、接线简单、干路电流小、更省电。',
+formula: '判据 ① 从 0 起调　② 宽范围　③ R₀ ≪ R　→ 任一条命中就分压',
+allow: { card: true, R0: true, R: true },
+rng: Object.assign({}, RNG_R0, RNG_R),
+view: 'guide', mode: 'limit', s: 0.5, R0: 100, R: 100, guidePick: null,
+headline: '限流还是分压：判据决策表', tag: '点卡片逐条问',
+conclusion: '任一条命中 → 分压；都不命中 → 限流',
+init: function (st) { st.view = 'guide'; st.guidePick = null; st.R0 = 100; st.R = 100; }
+},
+{
+act: A5,
+title: '判据③量化：R₀ 到底要多小才算「太小」',
+hint: '拖 <b>「变阻器最大阻值 R₀」</b> 与 <b>「负载阻值 R」</b>，看底部两条条带的差距',
+note: '把判据③变成可以算的数：<b>R₀ = R</b> 时限流最低能到 E/2；<br>' +
+'· R₀ ≥ R → 能用限流；<br>' +
+'· R₀ ≈ R/2 → 勉强，最低只能到 2E/3，数据分布会挤在高端；<br>' +
+'· <b>R₀ ≤ R/4</b> → 限流基本调不动（最低还高于 0.8E），该换分压。<br>' +
+'注意反过来的坑：分压要求 R₀ 也<b>不能太小</b>（太小则中间段调不开）、<b>也不必太大</b>（太大则只有一小段灵敏）。' +
+'所以"配得上"才是关键，选 R₀ ≈ R 一般都不会错。',
+formula: 'R₀ = R → U_min = E/2　｜　R₀ = R/4 → U_min = 0.8E（几乎调不动）',
+allow: { R0: true, R: true, s: true, drag: true },
+rng: Object.assign({}, RNG_R0, RNG_R, RNG_S),
+view: 'circuit', mode: 'limit', s: 0.5, R0: 50, R: 100, compare: true,
+headline: 'R₀/R = 0.5 的情形', tag: '调这个比值看条带',
+conclusion: 'R₀ ≤ R/4 → 该换分压',
+init: function (st) { st.view = 'circuit'; st.mode = 'limit'; st.s = 0.5; st.R0 = 50; st.R = 100; st.compare = true; }
+},
+{
+act: A5,
+title: '带走三句话',
+hint: '拖 <b>滑片</b>、拖 <b>R₀</b> 与 <b>R</b> 做最后一遍验证；点 <b>「限流 / 分压」</b> 来回切',
+note: '① <b>看范围</b>：限流 U ∈ [E·R/(R+R₀), E]（调不到 0）；分压 U ∈ [0, E]（从 0 起连续）。<br>' +
+'② <b>看代价</b>：限流只用两个柱、干路电流小、省电；分压三个柱、上段一直发热，费电、接线也更繁。<br>' +
+'③ <b>看判据</b>：要从 0 起调 / 要宽范围多组数据 / R₀ ≪ R —— 命中任意一条用<b>分压</b>；一条都不命中，' +
+'<b>优先限流</b>。',
+formula: '范围 → 代价 → 判据',
+allow: { s: true, drag: true, R0: true, R: true, mode: true },
+rng: Object.assign({}, RNG_S, RNG_R0, RNG_R),
+view: 'circuit', mode: 'limit', s: 0.5, R0: 100, R: 100, compare: true,
+headline: '三句话带走', tag: '范围 · 代价 · 判据',
+conclusion: '范围 → 代价 → 判据',
+init: function (st) { st.view = 'circuit'; st.mode = 'limit'; st.s = 0.5; st.R0 = 100; st.R = 100; st.compare = true; }
+},
+
+{
+act: A6,
+title: '练习一：小灯泡的伏安特性曲线',
+hint: '点画布上的<b>选项卡片</b>作答；下方圆点可切题',
+note: '这是课本上最经典的一道。问自己第一句：<b>电压要不要从 0 开始？</b>',
+formula: '判据①：从 0 起调 → 分压',
+allow: { quiz: true, quizIdx: true },
+rng: {},
+view: 'quiz', quizIdx: 0, quizAns: null, R0: 100, R: 100,
+headline: '练一练', tag: '点卡片作答',
+conclusion: '',
+init: function (st) { st.view = 'quiz'; st.quizIdx = 0; st.quizAns = null; }
+},
+{
+act: A6,
+title: '练习二：待测电阻远远大于变阻器',
+hint: '点<b>选项卡片</b>作答；下方圆点可切题',
+note: '注意 R₀ 只有 R 的二十分之一 —— 用判据③。',
+formula: '判据③：R₀ ≪ R → 分压',
+allow: { quiz: true, quizIdx: true },
+rng: {},
+view: 'quiz', quizIdx: 1, quizAns: null, R0: 100, R: 100,
+headline: '练一练', tag: '点卡片作答',
+conclusion: '',
+init: function (st) { st.view = 'quiz'; st.quizIdx = 1; st.quizAns = null; }
+},
+{
+act: A6,
+title: '练习三：只取几个不同的电压值',
+hint: '点<b>选项卡片</b>作答；下方圆点可切题',
+note: '三条判据一条都不命中时，别忘了"优先限流"。',
+formula: '三条都不命中 → 限流',
+allow: { quiz: true, quizIdx: true },
+rng: {},
+view: 'quiz', quizIdx: 2, quizAns: null, R0: 100, R: 100,
+headline: '练一练', tag: '点卡片作答',
+conclusion: '',
+init: function (st) { st.view = 'quiz'; st.quizIdx = 2; st.quizAns = null; }
+}
+];
+
+function apply(st, i) {
+var d = STEPS[clampIdx(i)];
+st.step = clampIdx(i);
+st.act = d.act; st.title = d.title; st.hint = d.hint; st.note = d.note; st.formula = d.formula;
+st.allow = d.allow || {}; st.rng = d.rng || {};
+st.view = d.view; st.mode = d.mode || 'limit';
+st.s = d.s == null ? 0.5 : d.s;
+st.R0 = d.R0 == null ? 100 : d.R0;
+st.R = d.R == null ? 100 : d.R;
+st.compare = !!d.compare; st.curveBoth = !!d.curveBoth;
+st.guidePick = d.guidePick || null;
+st.quizIdx = d.quizIdx == null ? 0 : d.quizIdx;
+st.quizAns = d.quizAns || null;
+st.arrows = d.arrows === false ? false : true;
+st.showA = d.showA === false ? false : true;
+st.showV = d.showV === false ? false : true;
+st.headline = d.headline || ''; st.tag = d.tag || ''; st.conclusion = d.conclusion || '';
+if (d.init) { d.init(st); }
+return st;
+}
+function clampIdx(i) { return i < 0 ? 0 : (i > STEPS.length - 1 ? STEPS.length - 1 : i); }
+
+return { STEPS: STEPS, baseState: base, apply: apply, clampIdx: clampIdx };
+})();
+
+
+
+(function () {
+'use strict';
+var P = window.VizPhys, R = window.VizRender, S = window.VizSteps;
+
+var cv = document.getElementById('cv');
+var ctx = cv.getContext('2d', { willReadFrequently: true });
+var st = S.baseState();
+var W = 0, H = 0, drag = null;
+
+function fitCanvas() {
+var wrap = cv.parentElement;
+var w = Math.max(320, Math.floor(wrap.clientWidth - 16));
+var h = Math.max(240, Math.floor(wrap.clientHeight - 6));
+if (w === W && h === H) { return false; }
+W = w; H = h;
+var dpr = Math.min(2, window.devicePixelRatio || 1);
+cv.width = Math.floor(w * dpr);
+cv.height = Math.floor(h * dpr);
+cv.style.width = w + 'px';
+cv.style.height = h + 'px';
+ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+return true;
+}
+
+function setTxt(id, v, cls) {
+var el = document.getElementById(id);
+if (!el) { return; }
+el.textContent = v;
+el.className = cls || '';
+}
+function rows(arr) {
+var s = '', i;
+for (i = 0; i < arr.length; i++) {
+s += '<div class="rd"><span>' + arr[i][0] + '</span><b class="' + (arr[i][2] || '') + '">' + arr[i][1] + '</b></div>';
+}
+return s;
+}
+
+function updatePanel() {
+var o = P.outOf(st.mode, st.s, st.R0, st.R);
+var rg = P.ranges(st.mode, st.R0, st.R);
+var isDiv = (st.mode === 'divider');
+var limTxt = isDiv ? '分压接法' : '限流接法';
+
+setTxt('modeTag', limTxt, isDiv ? 'tag red' : 'tag blue');
+
+document.getElementById('rdHead1').textContent = '① 这一刻的量（滑片位置 s = ' + st.s.toFixed(2) + '）';
+var a1 = [
+['负载两端电压 U', R.f2(o.U) + ' V', 'red'],
+['负载电流 I', R.f3(o.I) + ' A', 'blue'],
+['电源电动势 E', R.f2(P.E) + ' V', '']
+];
+if (isDiv) {
+a1.push(['上段 R₁（串在干路）', R.f2(o.Rup) + ' Ω', 'blue']);
+a1.push(['下段 R₂（与 R 并联）', R.f2(o.Rlow) + ' Ω', 'blue']);
+a1.push(['干路电流 I总', R.f3(o.Im) + ' A', 'blue']);
+} else {
+a1.push(['接入段 R′（滑片→B）', R.f2(o.Rx) + ' Ω', 'blue']);
+a1.push(['总电阻 R + R′', R.f2(st.R + o.Rx) + ' Ω', '']);
+}
+document.getElementById('rdGroup1').innerHTML = rows(a1);
+
+document.getElementById('rdHead2').textContent = '② 可调范围（拖滑片能到的两端）';
+var a2;
+if (isDiv) {
+a2 = [
+['电压 U 范围', R.f2(rg.Umin) + ' ~ ' + R.f2(rg.Umax) + ' V', 'red'],
+['能否调到 0', '能，从 0 连续可调', 'yellow'],
+['电流 I 范围', R.f3(rg.Imin) + ' ~ ' + R.f3(rg.Imax) + ' A', 'blue'],
+['范围宽度', '100% × E', 'yellow'],
+['代价', '上段一直发热，更费电', 'grey']
+];
+} else {
+a2 = [
+['电压 U 范围', R.f2(rg.Umin) + ' ~ ' + R.f2(rg.Umax) + ' V', 'red'],
+['能否调到 0', '不能，下限永远 > 0', 'yellow'],
+['电流 I 范围', R.f3(rg.Imin) + ' ~ ' + R.f3(rg.Imax) + ' A', 'blue'],
+['范围宽度', Math.round((rg.Umax - rg.Umin) / P.E * 100) + '% × E', 'yellow'],
+['U_min / E = R/(R+R₀)', R.f2(rg.Umin / P.E) + ' 倍', 'grey']
+];
+}
+document.getElementById('rdGroup2').innerHTML = rows(a2);
+
+var d = P.diagnose(st.R0, st.R);
+setTxt('rdRange', 'R₀ = ' + st.R0 + ' Ω　R = ' + st.R + ' Ω　R₀/R = ' + R.f2(d.k));
+setTxt('rdVerdict', d.level === 'ok' ? '限流够用（R₀ ≥ R）' : (d.level === 'mid' ? '限流偏窄（R₀ 只有 R 的一半上下）' : '限流几乎调不动（R₀ ≪ R）→ 该用分压'),
+d.level === 'ok' ? 'ok' : (d.level === 'mid' ? 'warn' : 'bad'));
+
+document.getElementById('rdFormula').textContent = st.formula;
+document.getElementById('rdNote').innerHTML = st.note;
+}
+
+function buildControls() {
+var k, el, def;
+var groups = [
+{ id: 'wrap_s', on: !!(st.allow && st.allow.s) },
+{ id: 'wrap_R0', on: !!(st.allow && st.allow.R0) },
+{ id: 'wrap_R', on: !!(st.allow && st.allow.R) },
+{ id: 'wrap_mode', on: !!(st.allow && st.allow.mode) },
+{ id: 'wrap_curve', on: !!st.curveBoth && st.view === 'curve' }
+];
+for (k = 0; k < groups.length; k++) {
+el = document.getElementById(groups[k].id);
+if (el) { el.classList.toggle('hidden', !groups[k].on); }
+}
+
+def = st.rng.s || [0, 1, 0.01];
+var rgS = document.getElementById('rgS');
+rgS.min = def[0]; rgS.max = def[1]; rgS.step = def[2]; rgS.value = st.s;
+def = st.rng.R0 || [P.R0_MIN, P.R0_MAX, 1];
+var rg0 = document.getElementById('rgR0');
+rg0.min = def[0]; rg0.max = def[1]; rg0.step = def[2]; rg0.value = st.R0;
+def = st.rng.R || [P.R_MIN, P.R_MAX, 1];
+var rgR = document.getElementById('rgR');
+rgR.min = def[0]; rgR.max = def[1]; rgR.step = def[2]; rgR.value = st.R;
+
+setTxt('lbS', 's = ' + st.s.toFixed(2), '');
+var rp = P.racc(st.s, st.R0);
+setTxt('lbS2', st.mode === 'divider' ? ('R₁ = ' + R.f2(st.s * st.R0) + ' / R₂ = ' + R.f2(rp) + ' Ω')
+: ('接入 R′ = ' + R.f2(rp) + ' Ω'), '');
+setTxt('lbR0', st.R0 + ' Ω', '');
+setTxt('lbR', st.R + ' Ω', '');
+
+var bs = document.querySelectorAll('#wrap_mode button');
+for (k = 0; k < bs.length; k++) {
+bs[k].classList.toggle('on', bs[k].dataset.mode === st.mode);
+}
+var bc = document.getElementById('btnCurve');
+if (bc) { bc.classList.toggle('on', !!st.curveBoth); }
+}
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+function buildToc() {
+var nav = document.getElementById('toc'), html = '', lastAct = '', i, d;
+for (i = 0; i < S.STEPS.length; i++) {
+d = S.STEPS[i];
+if (d.act !== lastAct) {
+if (lastAct) { html += '<span class="sep"></span>'; }
+html += '<span class="grouplab">' + esc(d.act.split(' · ')[0]) + '</span>';
+lastAct = d.act;
+}
+html += '<a data-go="' + i + '" title="' + esc(d.title) + '">' + (i + 1) + '</a>';
+}
+nav.innerHTML = html;
+nav.addEventListener('click', function (e) {
+var a = e.target.closest ? e.target.closest('a[data-go]') : null;
+if (a) { goto(parseInt(a.dataset.go, 10)); }
+});
+}
+function markToc() {
+var as = document.querySelectorAll('#toc a'), i;
+for (i = 0; i < as.length; i++) {
+as[i].classList.toggle('on', parseInt(as[i].dataset.go, 10) === st.step);
+}
+}
+
+/* ===================== 绘制 ===================== */
+function draw() {
+updatePanel();
+markToc();
+buildControls();
+fitCanvas();
+R.draw(ctx, W, H, st);
+document.getElementById('actTag').textContent = st.act;
+document.getElementById('stepTitle').textContent = st.title;
+document.getElementById('stepSn').textContent = (st.step + 1) + ' / ' + S.STEPS.length;
+document.getElementById('hint').innerHTML = st.hint;
+document.getElementById('prog').firstElementChild.style.width = ((st.step + 1) / S.STEPS.length * 100) + '%';
+cv.style.cursor = (st.allow && st.allow.s) ? 'grab' : 'default';
+}
+
+/* ===================== 步骤机 ===================== */
+function goto(i) { S.apply(st, i); draw(); }
+function next() { if (st.step < S.STEPS.length - 1) { goto(st.step + 1); } }
+function prev() { if (st.step > 0) { goto(st.step - 1); } }
+function reset() { goto(st.step); }
+
+function setS(v) {
+st.s = P.clamp01(v);
+if (st.rng && st.rng.s) {
+var a = st.rng.s[0], b = st.rng.s[1], stp = st.rng.s[2];
+st.s = Math.round(st.s / stp) * stp;
+st.s = P.clamp01(st.s);
+}
+draw();
+}
+function setR0(v) { st.R0 = Math.max(1, Math.round(v)); draw(); }
+function setR(v) { st.R = Math.max(1, Math.round(v)); draw(); }
+function setMode(m) { st.mode = (m === 'divider') ? 'divider' : 'limit'; st.s = P.clamp01(st.s); draw(); }
+
+/* ===================== 交互 ===================== */
+function canvasXY(e) {
+var r = cv.getBoundingClientRect();
+return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function bind() {
+document.getElementById('btnPrev').onclick = prev;
+document.getElementById('btnNext').onclick = next;
+document.getElementById('btnReset').onclick = reset;
+
+document.getElementById('rgS').addEventListener('input', function () { setS(parseFloat(this.value)); });
+document.getElementById('rgR0').addEventListener('input', function () { setR0(parseFloat(this.value)); });
+document.getElementById('rgR').addEventListener('input', function () { setR(parseFloat(this.value)); });
+
+document.getElementById('wrap_mode').addEventListener('click', function (e) {
+var b = e.target.closest ? e.target.closest('button[data-mode]') : null;
+if (b) { setMode(b.dataset.mode); }
+});
+document.getElementById('btnCurve').onclick = function () { st.curveBoth = !st.curveBoth; draw(); };
+document.getElementById('wrapRatio').addEventListener('click', function (e) {
+var b = e.target.closest ? e.target.closest('button[data-typ]') : null;
+if (!b) { return; }
+var t = P.TYP[parseInt(b.dataset.typ, 10)];
+st.R0 = t.R0; st.R = t.R; draw();
+});
+
+/* 画布：点选卡片 / 拖滑片 */
+cv.addEventListener('pointerdown', function (e) {
+var p = canvasXY(e), hit = R.hitTest(W, H, st, p.x, p.y);
+if (hit && hit.type === 'card' && st.allow && st.allow.card) { st.guidePick = hit.k; draw(); return; }
+if (hit && hit.type === 'quiz' && st.allow && st.allow.quiz) { st.quizAns = hit.k; draw(); return; }
+if (hit && hit.type === 'quizIdx' && st.allow && st.allow.quizIdx) { st.quizIdx = hit.k; st.quizAns = null; draw(); return; }
+if (!(st.allow && st.allow.s)) { return; }
+var wi = R.wiperAt(W, H, st);
+drag = { xr0: wi.xr0, xr1: wi.xr1 };
+try { cv.setPointerCapture(e.pointerId); } catch (err) { }   /* 合成事件没有活跃指针，兜底 */
+cv.style.cursor = 'grabbing';
+setS((p.x - wi.xr0) / Math.max(1, wi.xr1 - wi.xr0));
+});
+cv.addEventListener('pointermove', function (e) {
+if (!drag) { return; }
+var p = canvasXY(e);
+setS((p.x - drag.xr0) / Math.max(1, drag.xr1 - drag.xr0));
+});
+function endDrag(e) {
+drag = null;
+cv.style.cursor = (st.allow && st.allow.s) ? 'grab' : 'default';
+try { cv.releasePointerCapture(e.pointerId); } catch (err) { }
+}
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', function () { drag = null; });
+
+document.addEventListener('keydown', function (e) {
+if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) { return; }
+if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); next(); }
+else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+else if (e.key === 'Home') { goto(0); }
+else if (e.key === 'End') { goto(S.STEPS.length - 1); }
+else if ((e.key === '1' || e.key === '2') && st.allow && st.allow.mode) { setMode(e.key === '1' ? 'limit' : 'divider'); }
+});
+
+window.addEventListener('resize', function () { fitCanvas(); R.draw(ctx, W, H, st); });
+}
+
+/* ===================== 自检钩子 ===================== */
+function hash() {
+if (!W || !H) { return 'empty'; }
+var d = ctx.getImageData(0, 0, Math.min(W, cv.width), Math.min(H, cv.height)).data;
+var h = 2166136261 >>> 0, i, step = 97;
+for (i = 0; i < d.length; i += step * 4) {
+h ^= d[i]; h = Math.imul(h, 16777619) >>> 0;
+h ^= d[i + 1]; h = Math.imul(h, 16777619) >>> 0;
+h ^= d[i + 2]; h = Math.imul(h, 16777619) >>> 0;
+}
+return (h >>> 0).toString(16);
+}
+
+/* 验收第 5 条：hint 说能拖的，allow 里必须有 */
+function checkAllowConsistency() {
+var bad = [], i, d, t, a;
+for (i = 0; i < S.STEPS.length; i++) {
+d = S.STEPS[i]; t = d.hint || ''; a = d.allow || {};
+if (/拖/.test(t) && !(a.s || a.drag)) { bad.push('step' + (i + 1) + ': hint 提到拖动，allow.s/drag 缺失'); }
+if (/滑片/.test(t) && !(a.s || a.drag)) { bad.push('step' + (i + 1) + ': hint 提到滑片，allow.s/drag 缺失'); }
+if (/变阻器最大阻值|R₀/.test(t) && !a.R0) { bad.push('step' + (i + 1) + ': hint 提到 R₀，allow.R0 缺失'); }
+if (/负载阻值/.test(t) && !a.R) { bad.push('step' + (i + 1) + ': hint 提到负载阻值，allow.R 缺失'); }
+if (/限流 \/ 分压|点「限流/.test(t) && !a.mode) { bad.push('step' + (i + 1) + ': hint 提到接法切换，allow.mode 缺失'); }
+if (/卡片/.test(t) && !(a.card || a.quiz)) { bad.push('step' + (i + 1) + ': hint 提到卡片，allow.card/quiz 缺失'); }
+if (/圆点可切题/.test(t) && !a.quizIdx) { bad.push('step' + (i + 1) + ': hint 提到切题，allow.quizIdx 缺失'); }
+}
+return { ok: bad.length === 0, bad: bad };
+}
+
+window.__viz = {
+selfTest: function () {
+var p = P.runSelfTest();
+var c = checkAllowConsistency();
+var fails = p.fails.slice();
+var n = p.nfail + (c.ok ? 0 : c.bad.length);
+if (!c.ok) { fails = fails.concat(c.bad); }
+return { pass: n === 0, cases: p.cases, nfail: n, fails: fails.slice(0, 12) };
+},
+hash: hash, goto: goto, next: next, prev: prev,
+state: function () { return st; },
+steps: S.STEPS.length,
+checkAllow: checkAllowConsistency,
+setS: setS, setR0: setR0, setR: setR, setMode: setMode,
+diag: function () { return { W: W, H: H, cw: cv.width, ch: cv.height, view: st.view, mode: st.mode, step: st.step, s: st.s }; }
+};
+
+/* ===================== 启动 ===================== */
+buildToc();
+bind();
+goto(0);
+window.addEventListener('load', function () { fitCanvas(); R.draw(ctx, W, H, st); });
+})();
+
+</script>
+</body>
+</html>
